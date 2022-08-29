@@ -1,7 +1,7 @@
 export interface Board {
     id: string;
     title: string;
-    desceiption: string;
+    description: string;
     status: BoardStatus;
 }
 
