@@ -1,9 +1,9 @@
 import { User } from "src/auth/user.entity";
 import { BaseEntity, Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
-import { BoardStatus } from "./board-status.enum";
+import { PostStatus } from "./post-status.enum";
 
 @Entity()
-export class Board extends BaseEntity {
+export class PostEntity extends BaseEntity {
     @PrimaryGeneratedColumn()
     id: number;
 
@@ -14,9 +14,9 @@ export class Board extends BaseEntity {
     description: string;
 
     @Column()
-    status: BoardStatus;
+    status: PostStatus;
 
-    @ManyToOne(type => User, user => user.boards, { eager: false })
+    @ManyToOne(type => User, user => user.posts, { eager: false })
     user: User;
 
 }

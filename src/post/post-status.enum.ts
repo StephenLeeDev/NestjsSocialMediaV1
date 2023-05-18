@@ -1,4 +1,4 @@
-export enum BoardStatus {
+export enum PostStatus {
     PUBLIC = 'PUBLIC',
     PRIVATE = 'PRIVATE'
 }

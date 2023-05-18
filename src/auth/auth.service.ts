@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AuthCredentialsDto } from './dto/auth-credential.dto';
 import { UserRepository } from './user.repository';
@@ -13,21 +13,46 @@ export class AuthService {
         private jwtService: JwtService
     ) { }
     
-    async signUp(authCredentialsDto: AuthCredentialsDto): Promise<void> {
-        return this.userRepository.createUser(authCredentialsDto);
+    private logger = new Logger('AuthService');
+
+    async signUp(authCredentialsDto: AuthCredentialsDto): Promise<{accessToken: string}> {
+        await this.userRepository.createUser(authCredentialsDto);
+        
+        return this.signIn(authCredentialsDto);
     }
 
     async signIn(authCredentialsDto: AuthCredentialsDto): Promise<{accessToken: string}> {
-        const { username, password } = authCredentialsDto;
-        const user = await this.userRepository.findOne({ username })
+        const { username, socialType, socialToken, email } = authCredentialsDto;
+        const user = await this.userRepository.findOne({ email })
 
-        if (user && (await bcrypt.compare(password, user.password))) {
-            const payload = { username };
+        if (user) {
+            const payload = { email };
             const accessToken = await this.jwtService.sign(payload);
+
+            this.logger.verbose(`User ${user.email} has signed in`);
 
             return { accessToken };
         } else {
             throw new UnauthorizedException('LogIn Failed')
+        }
+    }
+
+    async test(): Promise<{ accessToken: string }> {
+        const socialToken = 'testUser';
+        const email = 'testUser@gmail.com';
+        const user = await this.userRepository.findOne({ email })
+
+        if (user) {
+            this.logger.verbose(`test ${user}`);
+            const accessToken = await this.jwtService.sign({ socialToken });
+            return { accessToken };
+        } else {
+            this.logger.verbose(`user is null ${user}`);
+            const testUserAuthDto = { socialToken, socialType: "GOOGLE", username: socialToken, email };
+            await this.signUp(testUserAuthDto);
+
+            const accessToken = await this.jwtService.sign({ socialToken });
+            return { accessToken };
         }
     }
 

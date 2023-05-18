@@ -4,13 +4,27 @@ import { AppModule } from './app.module';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import { SocketIoAdapter } from './chat/socket-io.adapters';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
+
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  const config = new DocumentBuilder()
+    .setTitle('Swagger API')
+    .setDescription('Swagger API Document')
+    .setVersion('1.0')
+    .addCookieAuth('connect.sid')
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api', app, document);
+  
   const port = 3001;
   app.useStaticAssets(join(__dirname, '..', 'static'));
   app.useWebSocketAdapter(new SocketIoAdapter(app));
   await app.listen(port);
   Logger.log(`Application running on port ${port}`);
+
+
 }
 bootstrap();
