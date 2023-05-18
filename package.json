@@ -26,8 +26,11 @@
     "@nestjs/jwt": "^8.0.0",
     "@nestjs/passport": "^8.0.0",
     "@nestjs/platform-express": "^8.4.7",
+    "@nestjs/platform-socket.io": "^7.6.15",
     "@nestjs/serve-static": "^3.0.0",
+    "@nestjs/swagger": "^6.3.0",
     "@nestjs/typeorm": "^8.0.1",
+    "@nestjs/websockets": "^7.6.15",
     "@types/passport-jwt": "^3.0.6",
     "bcryptjs": "^2.4.3",
     "class-transformer": "^0.4.0",
@@ -40,11 +43,10 @@
     "reflect-metadata": "^0.1.13",
     "rimraf": "^3.0.2",
     "rxjs": "^7.2.0",
-    "typeorm": "^0.2.34",
-    "uuid": "^8.3.2",
     "socket.io": "4.6.1",
-    "@nestjs/websockets": "^7.6.15",
-    "@nestjs/platform-socket.io": "^7.6.15"
+    "swagger-ui-express": "^4.6.3",
+    "typeorm": "^0.2.34",
+    "uuid": "^8.3.2"
   },
   "devDependencies": {
     "@nestjs/cli": "^8.0.0",
