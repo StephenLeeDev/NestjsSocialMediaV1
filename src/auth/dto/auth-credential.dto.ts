@@ -1,4 +1,4 @@
-import { IsString, Matches, MaxLength, MinLength } from "class-validator";
+import { IsString } from "class-validator";
 
 export class AuthCredentialsDto {
 
@@ -7,9 +7,6 @@ export class AuthCredentialsDto {
 
     @IsString()
     socialType: string;
-
-    @IsString()
-    socialToken: string;
 
     @IsString()
     email: string;
