@@ -18,7 +18,7 @@ export class PostService {
     ): Promise<PostEntity[]> {
         const query = this.postRepository.createQueryBuilder('post');
 
-        query.where('post.email = :email', { email: user.email })
+        query.where('post.user.email = :email', { email: user.email })
 
         const posts = await query.getMany();
         return posts;
