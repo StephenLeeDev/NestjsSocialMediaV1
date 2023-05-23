@@ -18,7 +18,7 @@ export class UserRepository extends Repository<User> {
             this.logger.verbose(`User ${user.email} account has generated`);
         } catch (error) {
             if (error.code === '23505') {
-                throw new ConflictException('Existing username');
+                throw new ConflictException(`Sign up Failed. ${email} account already exists.`);
             } else {
                 throw new InternalServerErrorException();
             }

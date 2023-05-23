@@ -1,5 +1,5 @@
 import { PostEntity } from "src/post/post.entity";
-import { BaseEntity, Column, Entity, OneToMany, PrimaryGeneratedColumn, Unique } from "typeorm";
+import { BaseEntity, Column, Entity, OneToMany, Unique } from "typeorm";
 
 @Entity()
 @Unique(['email'])

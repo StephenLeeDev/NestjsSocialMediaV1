@@ -31,7 +31,7 @@ export class AuthController {
             value: {
               username: 'testUser',
               socialType: 'GOOGLE',
-              email: 'testUser@example.com',
+              email: 'testUser@gmail.com',
             },
             description: 'Example request body',
           },

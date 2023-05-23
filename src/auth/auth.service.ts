@@ -2,7 +2,6 @@ import { ConflictException, Injectable, Logger, UnauthorizedException } from '@n
 import { InjectRepository } from '@nestjs/typeorm';
 import { AuthCredentialsDto } from './dto/auth-credential.dto';
 import { UserRepository } from './user.repository';
-import * as bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
 import { AuthSocialType } from './auth-social-type-validation.enum';
 
@@ -22,7 +21,7 @@ export class AuthService {
         const user = await this.userRepository.findOne({ email })
 
         if (user) {
-            throw new ConflictException('LogIn Failed. The account already exists.')
+            throw new ConflictException(`LogIn Failed. ${email} account already exists.`)
         }
         else {
             await this.userRepository.createUser(authCredentialsDto);

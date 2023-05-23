@@ -4,13 +4,12 @@ import { PostEntity } from "./post.entity";
 import { PostStatus } from './post-status.enum';
 import { CreatePostDto } from './dto/create-post.dto';
 import { PostStatusValidationPipe } from './pipe/post-status-validation.pipe';
-import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from 'src/auth/get-user.decorator';
 import { User } from 'src/auth/user.entity';
-import { ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
+import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('POST')
 @Controller('post')
-@UseGuards(AuthGuard())
 export class PostController {
 
     private logger = new Logger('PostController');
