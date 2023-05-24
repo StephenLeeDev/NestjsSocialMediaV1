@@ -1,9 +1,9 @@
-import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AuthCredentialsDto } from './dto/auth-credential.dto';
 import { UserRepository } from './user.repository';
-import * as bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
+import { AuthSocialType } from './auth-social-type-validation.enum';
 
 @Injectable()
 export class AuthService {
@@ -16,13 +16,22 @@ export class AuthService {
     private logger = new Logger('AuthService');
 
     async signUp(authCredentialsDto: AuthCredentialsDto): Promise<{accessToken: string}> {
-        await this.userRepository.createUser(authCredentialsDto);
-        
-        return this.signIn(authCredentialsDto);
+        const { username, socialType, email } = authCredentialsDto;
+
+        const user = await this.userRepository.findOne({ email })
+
+        if (user) {
+            throw new ConflictException(`LogIn Failed. ${email} account already exists.`)
+        }
+        else {
+            await this.userRepository.createUser(authCredentialsDto);
+            const accessToken = await this.jwtService.sign({ email });
+            return { accessToken };
+        }
     }
 
     async signIn(authCredentialsDto: AuthCredentialsDto): Promise<{accessToken: string}> {
-        const { username, socialType, socialToken, email } = authCredentialsDto;
+        const { username, socialType, email } = authCredentialsDto;
         const user = await this.userRepository.findOne({ email })
 
         if (user) {
@@ -38,20 +47,19 @@ export class AuthService {
     }
 
     async test(): Promise<{ accessToken: string }> {
-        const socialToken = 'testUser';
+        const username = 'testUser';
         const email = 'testUser@gmail.com';
         const user = await this.userRepository.findOne({ email })
 
         if (user) {
-            this.logger.verbose(`test ${user}`);
-            const accessToken = await this.jwtService.sign({ socialToken });
+            const accessToken = await this.jwtService.sign({ email });
             return { accessToken };
         } else {
-            this.logger.verbose(`user is null ${user}`);
-            const testUserAuthDto = { socialToken, socialType: "GOOGLE", username: socialToken, email };
+            this.logger.verbose(`The textUser not exists`);
+            const testUserAuthDto = { username, socialType: AuthSocialType.GOOGLE, email };
             await this.signUp(testUserAuthDto);
 
-            const accessToken = await this.jwtService.sign({ socialToken });
+            const accessToken = await this.jwtService.sign({ email });
             return { accessToken };
         }
     }

@@ -1,26 +1,42 @@
-import { Body, Controller, Post, Req, UseGuards, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Post, Req, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { AuthCredentialsDto } from './dto/auth-credential.dto';
 import { GetUser } from './get-user.decorator';
 import { User } from './user.entity';
-import { ApiParam, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiParam, ApiOperation, ApiResponse, ApiTags, ApiBody } from '@nestjs/swagger';
+import { AuthSocialTypeValidationPipe } from './pipe/auth-social-type-validation.pipe';
+import { SchemaObject } from '@nestjs/swagger/dist/interfaces/open-api-spec.interface';
+
+const authCredentialsSchema: SchemaObject = {
+    type: 'object',
+    properties: {
+    username: { type: 'string' },
+    socialType: { type: 'string' },
+    email: { type: 'string' },
+    },
+    required: ['username', 'socialType', 'email'],
+};
 
 @ApiTags('USER')
 @Controller('auth')
 export class AuthController {
     constructor(private authService: AuthService) { }
     
-    @ApiParam({
-        name: 'socialType',
-        required: true,
-        description: "User's social platform type",
-    })
-    @ApiParam({
-        name: 'socialToken',
-        required: true,
-        description: "User's social platform account token",
-    })
+    @ApiBody({
+        schema: authCredentialsSchema,
+        type: AuthCredentialsDto,
+        examples: {
+          example: {
+            value: {
+              username: 'testUser',
+              socialType: 'GOOGLE',
+              email: 'testUser@gmail.com',
+            },
+            description: 'Example request body',
+          },
+        },
+      })
     @ApiResponse({
         type: String,
         status: 201,
@@ -28,7 +44,10 @@ export class AuthController {
     })
     @ApiOperation({ summary: 'Sign up' })
     @Post('/signup')
-    signUp(@Body() authCredentialsDTO: AuthCredentialsDto): Promise<{accessToken: string}> {
+    signUp(
+        // @Body(AuthSocialTypeValidationPipe) authCredentialsDTO: AuthCredentialsDto
+        @Body() authCredentialsDTO: AuthCredentialsDto
+    ): Promise<{ accessToken: string }> {
         return this.authService.signUp(authCredentialsDTO);
     }
 
