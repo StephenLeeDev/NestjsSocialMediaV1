@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Logger, Param, ParseIntPipe, Patch, Post, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Logger, Param, ParseIntPipe, Patch, Post, UseGuards } from '@nestjs/common';
 import { PostService } from './post.service';
 import { PostEntity } from "./post.entity";
 import { PostStatus } from './post-status.enum';
@@ -7,18 +7,18 @@ import { PostStatusValidationPipe } from './pipe/post-status-validation.pipe';
 import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from 'src/auth/get-user.decorator';
 import { User } from 'src/auth/user.entity';
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('POST')
 @Controller('post')
 @UseGuards(AuthGuard())
+@ApiBearerAuth('Secret1234')
 export class PostController {
 
     private logger = new Logger('PostController');
 
     constructor(private postService: PostService) { }
 
-    @ApiBearerAuth('Secret1234')
     @ApiOperation({ summary: `Get user's post list` })
     @Get('/')
     getPostList(
@@ -28,16 +28,6 @@ export class PostController {
         return this.postService.getPostList(user);
     }
 
-    @ApiParam({
-        name: 'title',
-        required: true,
-        description: "Post's title",
-    })
-    @ApiParam({
-        name: 'description',
-        required: true,
-        description: "Post's description",
-    })
     @ApiResponse({
         type: PostEntity,
         status: 200,
@@ -45,7 +35,6 @@ export class PostController {
     })
     @ApiOperation({ summary: 'Create a new post' })
     @Post()
-    @UsePipes(ValidationPipe)
     createPost(
         @Body() createPostDto: CreatePostDto,
         @GetUser() user: User,
