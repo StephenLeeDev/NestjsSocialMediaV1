@@ -20,3 +20,8 @@ export class PostEntity extends BaseEntity {
     user: User;
 
 }
+
+export class PostResponse {
+    posts: PostEntity[];
+    total: number;
+}
