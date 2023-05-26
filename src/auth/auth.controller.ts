@@ -1,26 +1,13 @@
-import { Body, Controller, Post, Req, UseGuards, ValidationPipe } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
+import { Body, Controller, Post, Req, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthCredentialsDto } from './dto/auth-credential.dto';
-import { GetUser } from './get-user.decorator';
-import { User } from './user.entity';
-import { ApiParam, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('USER')
 @Controller('auth')
 export class AuthController {
     constructor(private authService: AuthService) { }
     
-    @ApiParam({
-        name: 'socialType',
-        required: true,
-        description: "User's social platform type",
-    })
-    @ApiParam({
-        name: 'socialToken',
-        required: true,
-        description: "User's social platform account token",
-    })
     @ApiResponse({
         type: String,
         status: 201,
@@ -28,7 +15,9 @@ export class AuthController {
     })
     @ApiOperation({ summary: 'Sign up' })
     @Post('/signup')
-    signUp(@Body() authCredentialsDTO: AuthCredentialsDto): Promise<{accessToken: string}> {
+    signUp(
+        @Body() authCredentialsDTO: AuthCredentialsDto
+    ): Promise<{ accessToken: string }> {
         return this.authService.signUp(authCredentialsDTO);
     }
 

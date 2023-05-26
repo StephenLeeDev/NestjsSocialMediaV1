@@ -16,7 +16,12 @@ export class PostEntity extends BaseEntity {
     @Column()
     status: PostStatus;
 
-    @ManyToOne(type => User, user => user.posts, { eager: false })
+    @ManyToOne(() => User, (user) => user.posts, { eager: false })
     user: User;
 
+}
+
+export class PostResponse {
+    posts: PostEntity[];
+    total: number;
 }

@@ -2,7 +2,6 @@ import { ConflictException, InternalServerErrorException, Logger } from "@nestjs
 import { EntityRepository, Repository } from "typeorm";
 import { AuthCredentialsDto } from "./dto/auth-credential.dto";
 import { User } from "./user.entity";
-import * as bcrypt from 'bcryptjs';
 
 @EntityRepository(User)
 export class UserRepository extends Repository<User> {
@@ -10,19 +9,16 @@ export class UserRepository extends Repository<User> {
     private logger = new Logger('UserRepository');
 
     async createUser(authCredentialsDto: AuthCredentialsDto): Promise<void> {
-        const { username, socialType, socialToken, email } = authCredentialsDto;
+        const { username, socialType, email } = authCredentialsDto;
 
-        const salt = await bcrypt.genSalt();
-        const hashedSocialToken = await bcrypt.hash(socialToken, salt);
-
-        const user = this.create({ username, socialType, socialToken: hashedSocialToken, email });
+        const user = this.create({ username, socialType, email });
 
         try {
             await this.save(user);
             this.logger.verbose(`User ${user.email} account has generated`);
         } catch (error) {
             if (error.code === '23505') {
-                throw new ConflictException('Existing username');
+                throw new ConflictException(`Sign up Failed. ${email} account already exists.`);
             } else {
                 throw new InternalServerErrorException();
             }
