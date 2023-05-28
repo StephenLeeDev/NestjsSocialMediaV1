@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PostStatus } from './post-status.enum';
 import { CreatePostDto } from './dto/create-post.dto';
 import { PostRepository } from './post.repository';
@@ -12,8 +12,9 @@ export class PostService {
     constructor(
         @InjectRepository(PostRepository)
         private postRepository: PostRepository,
-        private userRepository: UserRepository,
     ) { }
+
+    private logger = new Logger('PostService');
 
     async getPostList(
         user: User,
@@ -32,6 +33,11 @@ export class PostService {
 
         const [posts, total] = await query.getManyAndCount();
 
+        posts.map((post) => {
+            this.logger.verbose(`post : ${post}`);
+        });
+        this.logger.verbose(`total : ${total}`);
+
         return { posts, total };
 
     }
@@ -41,26 +47,29 @@ export class PostService {
     }
 
     async getPostById(id: number): Promise<PostEntity> {
-        const found = await this.postRepository.findOne(id);
+        const post = await this.postRepository.findOne(id);
 
-        if (!found) {
+        if (!post) {
+            this.logger.error(`Can't find Post with id ${id}`);
             throw new NotFoundException(`Can't find Post with id ${id}`);
         }
 
-        return found;
+        this.logger.verbose(`post : ${post}`);
+        return post;
     }
 
     async deletePost(
         id: number,
         user: User,
     ): Promise<void> {
-        const result = await this.postRepository.delete({ id, user});
+        const result = await this.postRepository.delete({ id, user });
 
         if (result.affected === 0) {
+            this.logger.error(`Can't find Post with id ${id}`);
             throw new NotFoundException(`Can't find Post with id ${id}`);
         }
 
-        console.log('result', result);
+        this.logger.verbose(`result ${result}`);
     }
 
     async updatePostStatus(id: number, status: PostStatus): Promise<PostEntity> {
@@ -72,20 +81,16 @@ export class PostService {
         return post;
     }
 
-    async createDummyPosts(count: number): Promise<void> {
+    async createDummyPosts(count: number, user: User): Promise<void> {
         
-        const email = 'testUser@gmail.com';
-        const user = await this.userRepository.findOne({ email })
-
         for (let i = 0; i < count; i++) {
             const post = new PostEntity();
             post.title = `title ${i}`;
             post.description = `description ${i}`;
             post.status = PostStatus.PUBLIC;
-            // 여기서 필요에 따라 다른 필드 설정
       
             await this.postRepository.createPost(post, user);
-          }
+        }
     }
 
 }

@@ -82,4 +82,18 @@ export class PostController {
         return this.postService.updatePostStatus(id, status);
     }
 
+    @ApiResponse({
+        status: 201,
+        description: 'Success',
+    })
+    @ApiOperation({ summary: 'Create 10 dummy posts' })
+    @Post('/test/dummy')
+    createDummyPosts(
+        @GetUser() user: User,
+    ): Promise<void> {
+        const count = 10
+        this.logger.verbose(`User ${user.email} creating ${count} dummy posts.`);
+        return this.postService.createDummyPosts(count, user);
+    }
+
 }
