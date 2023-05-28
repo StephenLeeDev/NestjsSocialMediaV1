@@ -19,7 +19,7 @@ export class AuthCredentialsDto {
     socialType: string;
 
     @ApiProperty({
-        example: 'test@gmail.com',
+        example: 'testUser@gmail.com',
         description: `User's email address`,
       })
     @IsString()

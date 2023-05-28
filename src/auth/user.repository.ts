@@ -2,6 +2,7 @@ import { ConflictException, InternalServerErrorException, Logger } from "@nestjs
 import { EntityRepository, Repository } from "typeorm";
 import { AuthCredentialsDto } from "./dto/auth-credential.dto";
 import { User } from "./user.entity";
+import * as moment from 'moment-timezone';
 
 @EntityRepository(User)
 export class UserRepository extends Repository<User> {
@@ -11,7 +12,8 @@ export class UserRepository extends Repository<User> {
     async createUser(authCredentialsDto: AuthCredentialsDto): Promise<void> {
         const { username, socialType, email } = authCredentialsDto;
 
-        const user = this.create({ username, socialType, email });
+        const createdAt = moment().tz('Asia/Seoul').format('YYYY-MM-DD HH:mm:ss');
+        const user = this.create({ username, socialType, email, createdAt });
 
         try {
             await this.save(user);
