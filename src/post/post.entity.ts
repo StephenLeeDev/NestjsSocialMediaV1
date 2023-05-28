@@ -1,5 +1,6 @@
+
 import { User } from "src/user/user.entity";
-import { BaseEntity, Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { PostStatus } from "./post-status.enum";
 
 @Entity()
@@ -17,7 +18,14 @@ export class PostEntity extends BaseEntity {
     status: PostStatus;
 
     @ManyToOne(() => User, (user) => user.posts, { eager: false })
+    @JoinColumn([{ name: 'UserEmail', referencedColumnName: 'email' }])
     user: User;
+
+    @Column()
+    createdAt: Date;
+
+    @Column()
+    updatedAt: Date;
 
 }
 

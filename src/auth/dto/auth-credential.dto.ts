@@ -21,7 +21,8 @@ export class AuthCredentialsDto {
     @ApiProperty({
         example: 'john@gmail.com',
         description: `User's email address`,
-      })
+    })
+      
     @IsString()
     email: string;
 
