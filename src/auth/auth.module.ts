@@ -5,7 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
-import { UserRepository } from './user.repository';
+import { AuthRepository } from './auth.repository';
 
 @Module({
   imports: [
@@ -16,7 +16,7 @@ import { UserRepository } from './user.repository';
         expiresIn: 60 * 60 * 365,
       }
     }),
-    TypeOrmModule.forFeature([UserRepository])
+    TypeOrmModule.forFeature([AuthRepository])
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],

@@ -17,4 +17,7 @@ export class User extends BaseEntity {
     @OneToMany(type => PostEntity, post => post.user, { eager: true })
     posts: PostEntity[];
 
+    @Column({ default: 'public/images/default_thumbnail.png' })
+    thumbnail: string;
+
 }
