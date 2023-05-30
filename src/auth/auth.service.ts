@@ -78,7 +78,7 @@ export class AuthService {
 
             const accessToken = await this.jwtService.sign({ email });
 
-            this.logger.verbose(`User ${user.email} has signed in`);
+            this.logger.verbose(`User ${email} has signed in`);
     
             return { accessToken };
         }

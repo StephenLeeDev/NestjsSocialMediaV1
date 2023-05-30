@@ -10,9 +10,9 @@ import { User } from 'src/user/user.entity';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('POST')
-@Controller('post')
 @UseGuards(AuthGuard())
 @ApiBearerAuth('Secret1234')
+@Controller('post')
 export class PostController {
 
     private logger = new Logger('PostController');
