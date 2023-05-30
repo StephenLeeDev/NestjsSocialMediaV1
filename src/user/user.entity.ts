@@ -24,7 +24,7 @@ export class User extends BaseEntity {
     @Column()
     createdAt: Date;
 
-    @Column({ default: `${serverUrl}:${port}/public/images/default_thumbnail.png` })
+    @Column({ default: `${serverUrl}:${port}/images/default_thumbnail.png` })
     thumbnail: string;
 
 }
