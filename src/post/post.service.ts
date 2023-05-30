@@ -27,8 +27,12 @@ export class PostService {
 
     }
 
-    createPost(createPostDto: CreatePostDto, user: User): Promise<PostEntity> {
-        return this.postRepository.createPost(createPostDto, user);
+    async createPost(createPostDto: CreatePostDto, user: User, images: Express.Multer.File[]): Promise<PostEntity> {
+        return this.postRepository.createPost(createPostDto, user, images);
+    }
+
+    async createPostTest(createPostDto: CreatePostDto, user: User, images: Express.Multer.File): Promise<PostEntity> {
+        return this.postRepository.createPostTest(createPostDto, user, images);
     }
 
     async getPostById(id: number): Promise<PostEntity> {
@@ -66,16 +70,15 @@ export class PostService {
         return post;
     }
 
-    async createDummyPosts(count: number, user: User): Promise<void> {
+    // async createDummyPosts(count: number, user: User): Promise<void> {
         
-        for (let i = 0; i < count; i++) {
-            const post = new PostEntity();
-            post.title = `title ${i}`;
-            post.description = `description ${i}`;
-            post.status = PostStatus.PUBLIC;
+    //     for (let i = 0; i < count; i++) {
+    //         const post = new CreatePostDto();
+    //         post.title = `title ${i}`;
+    //         post.description = `description ${i}`;
       
-            await this.postRepository.createPost(post, user);
-        }
-    }
+    //         await this.postRepository.createPost(post, user);
+    //     }
+    // }
 
 }

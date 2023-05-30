@@ -1,7 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserRepository } from './user.repository';
-import { AuthRepository } from 'src/auth/auth.repository';
 import { UserInfoDto } from './dto/user-info.dto';
 
 @Injectable()

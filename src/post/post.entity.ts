@@ -26,6 +26,9 @@ export class PostEntity extends BaseEntity {
     @Column()
     updatedAt: Date;
 
+    @Column('text', { array: true, nullable: true })
+    imageUrls: string[];
+
 }
 
 export class PostResponse {
