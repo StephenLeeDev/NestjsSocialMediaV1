@@ -4,8 +4,8 @@ import { CreatePostDto } from './dto/create-post.dto';
 import { PostRepository } from './post.repository';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PostEntity, PostResponse } from './post.entity';
-import { User } from 'src/auth/user.entity';
-import { UserRepository } from 'src/auth/user.repository';
+import { User } from 'src/user/user.entity';
+import { AuthRepository } from 'src/auth/auth.repository';
 
 @Injectable()
 export class PostService {

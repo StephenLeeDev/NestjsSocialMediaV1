@@ -5,7 +5,7 @@ import { AuthSocialType } from "../auth-social-type-validation.enum";
 export class AuthCredentialsDto {
 
     @ApiProperty({
-        example: 'Stephen',
+        example: 'John',
         description: `User's name`,
       })
     @IsString()
@@ -19,7 +19,7 @@ export class AuthCredentialsDto {
     socialType: string;
 
     @ApiProperty({
-        example: 'test@gmail.com',
+        example: 'john@gmail.com',
         description: `User's email address`,
       })
     @IsString()

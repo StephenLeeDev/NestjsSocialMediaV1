@@ -6,7 +6,7 @@ export const typeORMConfig: TypeOrmModuleOptions = {
     port: 4000,
     username: 'postgres',
     password: '0000',
-    database: 'instagram-app',
+    database: 'social-media-app',
     entities: [__dirname + '/../**/*.entity.{js,ts}'],
     synchronize: true
 }

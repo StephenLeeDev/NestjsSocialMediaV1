@@ -1,15 +1,15 @@
 import { ConflictException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AuthCredentialsDto } from './dto/auth-credential.dto';
-import { UserRepository } from './user.repository';
+import { AuthRepository } from './auth.repository';
 import { JwtService } from '@nestjs/jwt';
 import { AuthSocialType } from './auth-social-type-validation.enum';
 
 @Injectable()
 export class AuthService {
     constructor(
-        @InjectRepository(UserRepository)
-        private userRepository: UserRepository,
+        @InjectRepository(AuthRepository)
+        private authRepository: AuthRepository,
         private jwtService: JwtService
     ) { }
     
@@ -18,7 +18,7 @@ export class AuthService {
     async signUp(authCredentialsDto: AuthCredentialsDto): Promise<{accessToken: string}> {
         const { email } = authCredentialsDto;
 
-        const user = await this.userRepository.findOne({ email });
+        const user = await this.authRepository.findOne({ email });
 
         // User account exists.
         if (user) {
@@ -27,10 +27,10 @@ export class AuthService {
         }
         // User account not exists. Sign in directly.
         else {
-            await this.userRepository.createUser(authCredentialsDto);
+            await this.authRepository.createUser(authCredentialsDto);
             const accessToken = await this.jwtService.sign({ email });
 
-            this.logger.verbose(`User ${user.email} has signed in`);
+            this.logger.verbose(`User ${email} has signed in`);
 
             return { accessToken };
         }
@@ -38,7 +38,7 @@ export class AuthService {
 
     async signIn(authCredentialsDto: AuthCredentialsDto): Promise<{accessToken: string}> {
         const { socialType, email } = authCredentialsDto;
-        const user = await this.userRepository.findOne({ email });
+        const user = await this.authRepository.findOne({ email });
 
         // User account exists.
         if (user) {
@@ -64,7 +64,7 @@ export class AuthService {
     async test(): Promise<{ accessToken: string }> {
         const username = 'testUser';
         const email = 'testUser@gmail.com';
-        const user = await this.userRepository.findOne({ email });
+        const user = await this.authRepository.findOne({ email });
 
         if (user) {
             const accessToken = await this.jwtService.sign({ email });
@@ -78,7 +78,7 @@ export class AuthService {
 
             const accessToken = await this.jwtService.sign({ email });
 
-            this.logger.verbose(`User ${user.email} has signed in`);
+            this.logger.verbose(`User ${email} has signed in`);
     
             return { accessToken };
         }

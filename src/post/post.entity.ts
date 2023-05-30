@@ -1,4 +1,4 @@
-import { User } from "src/auth/user.entity";
+import { User } from "src/user/user.entity";
 import { BaseEntity, Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { PostStatus } from "./post-status.enum";
 

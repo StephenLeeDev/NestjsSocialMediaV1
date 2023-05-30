@@ -4,11 +4,11 @@ import { AuthModule } from 'src/auth/auth.module';
 import { PostRepository } from './post.repository';
 import { PostController } from './post.controller';
 import { PostService } from './post.service';
-import { UserRepository } from 'src/auth/user.repository';
+import { AuthRepository } from 'src/auth/auth.repository';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([PostRepository, UserRepository]),
+    TypeOrmModule.forFeature([PostRepository, AuthRepository]),
     AuthModule
   ],
   controllers: [PostController],
