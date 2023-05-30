@@ -20,22 +20,10 @@ export class PostService {
         page: number,
         limit: number,
     ): Promise<PostResponse> {
-        const query = this.postRepository.createQueryBuilder('post');
 
-        query
-            .where('post.user.email = :email', { email: user.email })
-            .andWhere('post.status = :status', { status: PostStatus.PUBLIC })
-            .leftJoinAndSelect('post.user', 'user')
-            .select(['post.id', 'post.title', 'post.description', 'post.status', 'post.createdAt', 'user.username', 'user.email'])
-            .skip((page - 1) * limit)
-            .take(limit);
+        const postListResponse = await this.postRepository.getPostList(user, page, limit);
 
-        const [posts, total] = await query.getManyAndCount();
-
-        this.logger.verbose(`post list length : ${posts.length}`);
-        this.logger.verbose(`total : ${total}`);
-
-        return { posts, total };
+        return postListResponse;
 
     }
 
