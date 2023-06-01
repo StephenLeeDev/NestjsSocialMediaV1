@@ -5,6 +5,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import { SocketIoAdapter } from './chat/socket-io.adapters';
 import { DocumentBuilder, SwaggerCustomOptions, SwaggerModule } from '@nestjs/swagger';
+import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
 
@@ -25,11 +26,13 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document, swaggerCustomOptions);
   
-  const port = 3001;
+  const configService = app.get(ConfigService);
+
+  const port = configService.get('PORT');
   app.useStaticAssets(join(__dirname, '..', 'static'));
   app.useWebSocketAdapter(new SocketIoAdapter(app));
   await app.listen(port);
-  Logger.log(`Application running on port ${port}`);
+  Logger.log(`Application running on ${configService.get('SERVER_URL')}`);
 
 }
 bootstrap();
