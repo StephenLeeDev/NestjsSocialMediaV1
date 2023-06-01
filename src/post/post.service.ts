@@ -5,12 +5,14 @@ import { PostRepository } from './post.repository';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PostEntity, PostResponse } from './post.entity';
 import { User } from 'src/user/user.entity';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class PostService {
     constructor(
         @InjectRepository(PostRepository)
         private postRepository: PostRepository,
+        private readonly configService: ConfigService
     ) { }
 
     private logger = new Logger('PostService');
@@ -27,14 +29,24 @@ export class PostService {
 
     }
 
-    async createPost(createPostDto: CreatePostDto, user: User, images: Express.Multer.File[]): Promise<PostEntity> {
-        return this.postRepository.createPost(createPostDto, user, images);
+    async createPost(createPostDto: CreatePostDto, user: User, imageUrls: string[]): Promise<PostEntity> {
+        return this.postRepository.createPost(createPostDto, user, imageUrls);
     }
 
-    async createPostTest(createPostDto: CreatePostDto, user: User, images: Express.Multer.File): Promise<PostEntity> {
-        return this.postRepository.createPostTest(createPostDto, user, images);
+    public uploadFiles(files: Array<Express.Multer.File>) {
+        const result = [];
+    
+        files.forEach((file) => {
+          const res = {
+            originalname: file.originalname,
+            filename: file.filename
+          };
+          result.push(res);
+        });
+    
+        return result;
     }
-
+    
     async getPostById(id: number): Promise<PostEntity> {
         const post = await this.postRepository.findOne(id);
 
@@ -70,15 +82,70 @@ export class PostService {
         return post;
     }
 
-    // async createDummyPosts(count: number, user: User): Promise<void> {
-        
-    //     for (let i = 0; i < count; i++) {
-    //         const post = new CreatePostDto();
-    //         post.title = `title ${i}`;
-    //         post.description = `description ${i}`;
-      
-    //         await this.postRepository.createPost(post, user);
-    //     }
-    // }
+    async createDummyPosts(count: number, user: User): Promise<void> {
+
+        const totalDummy = 14;
+
+        function shuffleArray(array: any[]): any[] {
+            const newArray = [...array];
+          
+            for (let i = newArray.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+            }
+
+            return newArray;
+        }
+          
+        function generateRandomArray(): string[][] {
+            const numbers = Array.from({ length: totalDummy }, (_, index) => index + 1);
+            const shuffledNumbers = shuffleArray(numbers);
+            
+            const result: string[][] = [];
+            for (let i = 0; i < 10; i++) {
+                const subset: string[] = [];
+            
+                const serverUrl = process.env.SERVER_URL;
+                if (i < 4) {
+                    subset.push(`${serverUrl}/images/dummy/${shuffledNumbers.pop()}.jpeg`);
+                    subset.push(`${serverUrl}/images/dummy/${shuffledNumbers.pop()}.jpeg`);
+                } else {
+                    subset.push(`${serverUrl}/images/dummy/${shuffledNumbers.pop()}.jpeg`);
+                }
+
+                result.push(subset);
+            }
+            return result;
+        }
+
+
+        const shuffledImageNumbers = generateRandomArray();
+
+        const words = ['Lorem', 'ipsum', 'dolor', 'sit', 'amet', 'consectetur', 'adipiscing', 'elit', 'sed', 'do', 'eiusmod', 'tempor', 'incididunt', 'ut', 'labore', 'et', 'dolore', 'magna', 'aliqua'];
+        function generateRandomSentence(): string {
+            const sentenceLength = Math.floor(Math.random() * 5) + 3;
+          
+            let sentence = '';
+          
+            for (let i = 0; i < sentenceLength; i++) {
+                const randomIndex = Math.floor(Math.random() * words.length);
+                const word = words[randomIndex];
+                sentence += word + ' ';
+            }
+          
+            sentence = sentence.trim();
+            sentence += '.';
+          
+            return sentence;
+        }
+
+        for (let i = 0; i < count; i++) {
+            const post = new CreatePostDto();
+            post.title = words[Math.floor(Math.random() * words.length)];
+            post.description = generateRandomSentence();
+
+            await this.postRepository.createPost(post, user, shuffledImageNumbers[i]);
+        }
+    }
 
 }
