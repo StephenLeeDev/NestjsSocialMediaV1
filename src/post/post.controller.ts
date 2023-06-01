@@ -7,11 +7,12 @@ import { PostStatusValidationPipe } from './pipe/post-status-validation.pipe';
 import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from 'src/auth/get-user.decorator';
 import { User } from 'src/user/user.entity';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { editFileName, imageFileFilter } from "../lib/multerOptions";
 import { diskStorage } from 'multer';
 import { ConfigService } from '@nestjs/config';
+import { ApiImplicitFile } from '@nestjs/swagger/dist/decorators/api-implicit-file.decorator';
 
 @ApiTags('POST')
 @UseGuards(AuthGuard())
@@ -57,6 +58,9 @@ export class PostController {
         status: 200,
         description: 'Success',
     })
+    @ApiConsumes('multipart/form-data')
+    @ApiImplicitFile({ name: 'files', description: `Post's images`, required: true })
+    @ApiBody({ type: CreatePostDto })
     @ApiOperation({ summary: 'Create a new post' })
     @Post()
     @UseInterceptors(FilesInterceptor("files", 3, {
@@ -115,3 +119,4 @@ export class PostController {
     }
 
 }
+

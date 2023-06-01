@@ -6,7 +6,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { PostEntity, PostResponse } from './post.entity';
 import { User } from 'src/user/user.entity';
 import { ConfigService } from '@nestjs/config';
-import * as dotenv from 'dotenv';
 
 @Injectable()
 export class PostService {

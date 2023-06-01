@@ -29,7 +29,19 @@ export class PostRepository extends Repository<PostEntity> {
         await this.save(post);
 
         this.logger.verbose(`${user.email}'s new post has created.`);
-        return post;
+        return {
+            id: post.id,
+            title: post.title,
+            description: post.description,
+            createdAt: post.createdAt,
+            updatedAt: post.updatedAt,
+            status: post.status,
+            imageUrls,
+            user: {
+                email: user.email,
+                username: user.username
+            }
+        } as PostEntity;
     }
 
     async getPostList(user: User, page: number, limit: number): Promise<PostResponse> {
