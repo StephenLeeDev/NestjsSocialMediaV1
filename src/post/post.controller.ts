@@ -8,7 +8,10 @@ import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from 'src/auth/get-user.decorator';
 import { User } from 'src/user/user.entity';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { editFileName, imageFileFilter } from "../lib/multerOptions";
+import { diskStorage } from 'multer';
+import { ConfigService } from '@nestjs/config';
 
 @ApiTags('POST')
 @UseGuards(AuthGuard())
@@ -18,7 +21,10 @@ export class PostController {
 
     private logger = new Logger('PostController');
 
-    constructor(private postService: PostService) { }
+    constructor(
+        private postService: PostService,
+        private readonly configService: ConfigService
+    ) { }
 
     @ApiResponse({
         type: PostResponse,
@@ -52,39 +58,25 @@ export class PostController {
         description: 'Success',
     })
     @ApiOperation({ summary: 'Create a new post' })
-    @UseInterceptors(FileInterceptor('images'))
     @Post()
-    createPost(
+    @UseInterceptors(FilesInterceptor("files", 3, {
+      storage: diskStorage({
+        destination: './static/images',
+        filename: editFileName
+      }),
+      fileFilter: imageFileFilter
+    }))
+    uploadFile(
         @Body() createPostDto: CreatePostDto,
         @GetUser() user: User,
-        // @UploadedFiles() images: Express.Multer.File[]
-        @UploadedFile() images: Express.Multer.File
-        // @UploadedFiles() images: Express.Multer.File[] | Express.Multer.File
-    // ): Promise<PostEntity> {
-    ) {
+        @UploadedFiles() files: Array<Express.Multer.File>,
+    ): Promise<PostEntity> {
 
-        // this.logger.verbose(`user : ${user.email}`);
-        // this.logger.verbose(`title : ${createPostDto.title}`);
-        // this.logger.verbose(`description : ${createPostDto.description}`);
-        this.logger.verbose(`createPost images : ${images}`);
-
-        // return images;
-        
-        const imageFiles: Express.Multer.File[] = [images]
-        // return this.postService.createPost(createPostDto, user, imageFiles);
-
-
-        return this.postService.createPostTest(createPostDto, user, images);
-    }
-
-    @ApiOperation({ summary: 'File Upload Test' })
-    @UseInterceptors(FileInterceptor('images'))
-    @Post('/file')
-    uploadFile(
-        @UploadedFile() images: Express.Multer.File
-    ) {
-        this.logger.verbose(`images : ${images}`);
-        return images;
+        return this.postService.createPost(
+            createPostDto,
+            user,
+            files.map(file => `${this.configService.get('SERVER_URL')}/images/${file.filename}`)
+        );
     }
 
     @Get('/:id')
@@ -108,18 +100,18 @@ export class PostController {
         return this.postService.updatePostStatus(id, status);
     }
 
-    // @ApiResponse({
-    //     status: 201,
-    //     description: 'Success',
-    // })
-    // @ApiOperation({ summary: 'Create 10 dummy posts' })
-    // @Post('/test/dummy')
-    // createDummyPosts(
-    //     @GetUser() user: User,
-    // ): Promise<void> {
-    //     const count = 10
-    //     this.logger.verbose(`User ${user.email} creating ${count} dummy posts.`);
-    //     return this.postService.createDummyPosts(count, user);
-    // }
+    @ApiResponse({
+        status: 201,
+        description: 'Success',
+    })
+    @ApiOperation({ summary: 'Create 10 dummy posts' })
+    @Post('/test/dummy')
+    createDummyPosts(
+        @GetUser() user: User,
+    ): Promise<void> {
+        const count = 10
+        this.logger.verbose(`User ${user.email} creating ${count} dummy posts.`);
+        return this.postService.createDummyPosts(count, user);
+    }
 
 }

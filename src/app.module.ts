@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { ChatGateway } from './chat/gateway/chat.gateway';
 import { ChatController } from './chat/chat.controller';
 import { UserModule } from './user/user.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
@@ -13,6 +14,9 @@ import { UserModule } from './user/user.module';
     PostModule,
     AuthModule,
     UserModule,
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
   ],
   providers: [ChatGateway],
   controllers: [ChatController],
