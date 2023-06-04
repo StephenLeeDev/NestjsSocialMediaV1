@@ -62,15 +62,15 @@ export class PostController {
     @ApiImplicitFile({ name: 'files', description: `Post's images`, required: true })
     @ApiBody({ type: CreatePostDto })
     @ApiOperation({ summary: 'Create a new post' })
-    @Post()
     @UseInterceptors(FilesInterceptor("files", 3, {
       storage: diskStorage({
-        destination: './static/images',
+        destination: `./static/images`,
         filename: editFileName
       }),
       fileFilter: imageFileFilter
     }))
-    uploadFile(
+    @Post()
+    createPost(
         @Body() createPostDto: CreatePostDto,
         @GetUser() user: User,
         @UploadedFiles() files: Array<Express.Multer.File>,
@@ -79,7 +79,7 @@ export class PostController {
         return this.postService.createPost(
             createPostDto,
             user,
-            files.map(file => `${this.configService.get('SERVER_URL')}/images/${user.uuid}/${file.filename}`)
+            files.map(file => `${this.configService.get('SERVER_URL')}/images/${file.filename}`)
         );
     }
 
