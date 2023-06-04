@@ -30,8 +30,6 @@ export class AuthService {
             await this.authRepository.createUser(authCredentialsDto);
             const accessToken = await this.jwtService.sign({ email });
 
-            this.logger.verbose(`User ${email} has signed in`);
-
             return { accessToken };
         }
     }
@@ -42,7 +40,6 @@ export class AuthService {
 
         // User account exists.
         if (user) {
-            // User account exists.
             if (user.socialType == socialType) {
                 const payload = { email };
                 const accessToken = await this.jwtService.sign(payload);
@@ -56,8 +53,7 @@ export class AuthService {
                 throw new ConflictException(`Sign in Failed. ${email} account already exists in ${user.socialType}.`);
             }
         } else {
-            this.logger.error('Sign in Failed');
-            throw new UnauthorizedException('Sign in Failed');
+            return this.signUp(authCredentialsDto);
         }
     }
 
