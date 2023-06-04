@@ -79,7 +79,7 @@ export class PostController {
         return this.postService.createPost(
             createPostDto,
             user,
-            files.map(file => `${this.configService.get('SERVER_URL')}/images/${file.filename}`)
+            files.map(file => `${this.configService.get('SERVER_URL')}/images/${user.uuid}/${file.filename}`)
         );
     }
 
