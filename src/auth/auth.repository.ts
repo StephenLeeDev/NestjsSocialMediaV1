@@ -3,6 +3,7 @@ import { EntityRepository, Repository } from "typeorm";
 import { AuthCredentialsDto } from "./dto/auth-credential.dto";
 import { User } from "../user/user.entity";
 import * as moment from 'moment-timezone';
+import { v4 as uuidv4 } from 'uuid';
 
 @EntityRepository(User)
 export class AuthRepository extends Repository<User> {
@@ -13,7 +14,8 @@ export class AuthRepository extends Repository<User> {
         const { username, socialType, email } = authCredentialsDto;
 
         const createdAt = moment().tz('Asia/Seoul').format('YYYY-MM-DD HH:mm:ss');
-        const user = this.create({ username, socialType, email, createdAt });
+        const uuid = uuidv4();
+        const user = this.create({ uuid, username, socialType, email, createdAt });
 
         try {
             await this.save(user);
