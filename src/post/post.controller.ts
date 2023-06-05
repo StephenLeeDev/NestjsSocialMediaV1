@@ -28,32 +28,6 @@ export class PostController {
     ) { }
 
     @ApiResponse({
-        type: PostResponse,
-        status: 200,
-        description: 'Success',
-    })
-    @ApiQuery({
-        name: 'page',
-        description: `The page's number to call`,
-        required: true,
-    })
-    @ApiQuery({
-        name: 'limit',
-        description: `The number of items on a single page`,
-        required: true,
-    })
-    @ApiOperation({ summary: `Get user's post list` })
-    @Get('/')
-    getPostList(
-        @GetUser() user: User,
-        @Query('page', ParseIntPipe) page: number,
-        @Query('limit', ParseIntPipe) limit: number,
-    ): Promise<PostResponse> {
-        this.logger.verbose(`User ${user.email} trying to get posts`);
-        return this.postService.getPostList(user, page, limit);
-    }
-
-    @ApiResponse({
         type: PostEntity,
         status: 200,
         description: 'Success',
@@ -81,6 +55,60 @@ export class PostController {
             user,
             files.map(file => `${this.configService.get('SERVER_URL')}/images/${file.filename}`)
         );
+    }
+
+    @ApiResponse({
+        type: PostResponse,
+        status: 200,
+        description: 'Success',
+    })
+    @ApiQuery({
+        name: 'page',
+        description: `The page's number to call`,
+        required: true,
+    })
+    @ApiQuery({
+        name: 'limit',
+        description: `The number of items on a single page`,
+        required: true,
+    })
+    @ApiOperation({ summary: `Get post list` })
+    @Get('/')
+    getPostList(
+        @Query('page', ParseIntPipe) page: number,
+        @Query('limit', ParseIntPipe) limit: number,
+    ): Promise<PostResponse> {
+        return this.postService.getPostList(page, limit);
+    }
+
+    @ApiResponse({
+        type: PostResponse,
+        status: 200,
+        description: 'Success',
+    })
+    @ApiQuery({
+        name: 'email',
+        description: `The post's author to call`,
+        required: true,
+    })
+    @ApiQuery({
+        name: 'page',
+        description: `The page's number to call`,
+        required: true,
+    })
+    @ApiQuery({
+        name: 'limit',
+        description: `The number of items on a single page`,
+        required: true,
+    })
+    @ApiOperation({ summary: `Get user's post list` })
+    @Get('/user/post')
+    getPostListByUser(
+        @Query('email') email: string,
+        @Query('page', ParseIntPipe) page: number,
+        @Query('limit', ParseIntPipe) limit: number,
+    ): Promise<PostResponse> {
+        return this.postService.getPostListByUser(email, page, limit);
     }
 
     @Get('/:id')

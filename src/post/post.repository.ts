@@ -44,12 +44,30 @@ export class PostRepository extends Repository<PostEntity> {
         } as PostEntity;
     }
 
-    async getPostList(user: User, page: number, limit: number): Promise<PostResponse> {
+    async getPostListByUser(email: string, page: number, limit: number): Promise<PostResponse> {
 
         const query = this.createQueryBuilder('post');
         query
-            .where('post.user.email = :email', { email: user.email })
+            .where('post.user.email = :email', { email })
             .andWhere('post.status = :status', { status: PostStatus.PUBLIC })
+            .leftJoinAndSelect('post.user', 'user')
+            .select(['post.id', 'post.title', 'post.description', 'post.status', 'post.createdAt', 'post.imageUrls', 'user.username', 'user.email'])
+            .skip((page - 1) * limit)
+            .take(limit);
+
+            const [posts, total] = await query.getManyAndCount();
+
+            this.logger.verbose(`post list length : ${posts.length}`);
+            this.logger.verbose(`total : ${total}`);
+    
+            return { posts, total };
+    }
+
+    async getPostList(page: number, limit: number): Promise<PostResponse> {
+
+        const query = this.createQueryBuilder('post');
+        query
+            .where('post.status = :status', { status: PostStatus.PUBLIC })
             .leftJoinAndSelect('post.user', 'user')
             .select(['post.id', 'post.title', 'post.description', 'post.status', 'post.createdAt', 'post.imageUrls', 'user.username', 'user.email'])
             .skip((page - 1) * limit)
