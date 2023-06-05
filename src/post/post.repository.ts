@@ -51,7 +51,7 @@ export class PostRepository extends Repository<PostEntity> {
             .where('post.user.email = :email', { email })
             .andWhere('post.status = :status', { status: PostStatus.PUBLIC })
             .leftJoinAndSelect('post.user', 'user')
-            .select(['post.id', 'post.title', 'post.description', 'post.status', 'post.createdAt', 'post.imageUrls', 'user.username', 'user.email'])
+            .select(['post.id', 'post.title', 'post.description', 'post.status', 'post.createdAt', 'post.imageUrls', 'user.username', 'user.email', 'user.thumbnail'])
             .skip((page - 1) * limit)
             .take(limit);
 
@@ -69,7 +69,7 @@ export class PostRepository extends Repository<PostEntity> {
         query
             .where('post.status = :status', { status: PostStatus.PUBLIC })
             .leftJoinAndSelect('post.user', 'user')
-            .select(['post.id', 'post.title', 'post.description', 'post.status', 'post.createdAt', 'post.imageUrls', 'user.username', 'user.email'])
+            .select(['post.id', 'post.title', 'post.description', 'post.status', 'post.createdAt', 'post.imageUrls', 'user.username', 'user.email', 'user.thumbnail'])
             .skip((page - 1) * limit)
             .take(limit);
 
