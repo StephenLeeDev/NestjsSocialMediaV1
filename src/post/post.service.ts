@@ -18,15 +18,24 @@ export class PostService {
     private logger = new Logger('PostService');
 
     async getPostList(
-        user: User,
         page: number,
         limit: number,
     ): Promise<PostResponse> {
 
-        const postListResponse = await this.postRepository.getPostList(user, page, limit);
+        const postListResponse = await this.postRepository.getPostList(page, limit);
 
         return postListResponse;
+    }
 
+    async getPostListByUser(
+        email: string,
+        page: number,
+        limit: number,
+    ): Promise<PostResponse> {
+
+        const postListResponse = await this.postRepository.getPostListByUser(email, page, limit);
+
+        return postListResponse;
     }
 
     async createPost(createPostDto: CreatePostDto, user: User, imageUrls: string[]): Promise<PostEntity> {
