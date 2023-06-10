@@ -111,6 +111,27 @@ export class PostController {
         return this.postService.getPostListByUser(email, page, limit);
     }
 
+    @ApiResponse({
+        type: [String],
+        status: 200,
+        description: 'Success',
+    })
+    @ApiQuery({
+        name: 'postId',
+        description: `The ID of the post to add/remove a like to`,
+        required: true,
+    })
+    @Post('/:postId/like')
+    likePost(
+        @GetUser() user: User,
+        @Query('postId', ParseIntPipe) postId: number,
+    ): Promise<string[]> {
+        return this.postService.likeUnlikePost(
+            postId,
+            user.email,
+        );
+    }
+
     @Get('/:id')
     getPostById(@Param('id') id: number): Promise<PostEntity> {
         return this.postService.getPostById(id);

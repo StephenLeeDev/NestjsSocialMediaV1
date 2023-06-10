@@ -4,11 +4,9 @@ import { PostStatus } from "./post-status.enum";
 
 @Entity()
 export class PostEntity extends BaseEntity {
+
     @PrimaryGeneratedColumn()
     id: number;
-
-    @Column()
-    title: string;
 
     @Column()
     description: string;
@@ -26,8 +24,11 @@ export class PostEntity extends BaseEntity {
     @Column()
     updatedAt: Date;
 
-    @Column('text', { array: true, nullable: true })
+    @Column('text', { array: true, nullable: false })
     imageUrls: string[];
+
+    @Column('text', { array: true, nullable: false })
+    likes: string[];
 
 }
 

@@ -12,18 +12,18 @@ export class PostRepository extends Repository<PostEntity> {
     private logger = new Logger('PostRepository');
 
     async createPost(createPostDto: CreatePostDto, user: User, imageUrls: string[]) : Promise<PostEntity> {
-        const { title, description } = createPostDto;
+        const { description } = createPostDto;
 
         const createdAt = moment().tz('Asia/Seoul').format('YYYY-MM-DD HH:mm:ss');
         
-        const post = this.create({ 
-            title, 
+        const post = this.create({
             description,
             status: PostStatus.PUBLIC,
             user,
             createdAt,
             updatedAt: createdAt,
             imageUrls,
+            likes: []
         })
 
         await this.save(post);
@@ -31,12 +31,12 @@ export class PostRepository extends Repository<PostEntity> {
         this.logger.verbose(`${user.email}'s new post has created.`);
         return {
             id: post.id,
-            title: post.title,
             description: post.description,
             createdAt: post.createdAt,
             updatedAt: post.updatedAt,
             status: post.status,
             imageUrls,
+            likes: post.likes,
             user: {
                 email: user.email,
                 username: user.username
@@ -55,12 +55,12 @@ export class PostRepository extends Repository<PostEntity> {
             .skip((page - 1) * limit)
             .take(limit);
 
-            const [posts, total] = await query.getManyAndCount();
+        const [posts, total] = await query.getManyAndCount();
 
-            this.logger.verbose(`post list length : ${posts.length}`);
-            this.logger.verbose(`total : ${total}`);
-    
-            return { posts, total };
+        this.logger.verbose(`post list length : ${posts.length}`);
+        this.logger.verbose(`total : ${total}`);
+
+        return { posts, total };
     }
 
     async getPostList(page: number, limit: number): Promise<PostResponse> {
@@ -73,12 +73,12 @@ export class PostRepository extends Repository<PostEntity> {
             .skip((page - 1) * limit)
             .take(limit);
 
-            const [posts, total] = await query.getManyAndCount();
+        const [posts, total] = await query.getManyAndCount();
 
-            this.logger.verbose(`post list length : ${posts.length}`);
-            this.logger.verbose(`total : ${total}`);
-    
-            return { posts, total };
+        this.logger.verbose(`post list length : ${posts.length}`);
+        this.logger.verbose(`total : ${total}`);
+
+        return { posts, total };
     }
 
 }

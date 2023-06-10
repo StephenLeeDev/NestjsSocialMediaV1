@@ -5,17 +5,19 @@ import { PostRepository } from './post.repository';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PostEntity, PostResponse } from './post.entity';
 import { User } from 'src/user/user.entity';
-import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class PostService {
     constructor(
         @InjectRepository(PostRepository)
         private postRepository: PostRepository,
-        private readonly configService: ConfigService
     ) { }
 
     private logger = new Logger('PostService');
+
+    async createPost(createPostDto: CreatePostDto, user: User, imageUrls: string[]): Promise<PostEntity> {
+        return this.postRepository.createPost(createPostDto, user, imageUrls);
+    }
 
     async getPostList(
         page: number,
@@ -38,24 +40,26 @@ export class PostService {
         return postListResponse;
     }
 
-    async createPost(createPostDto: CreatePostDto, user: User, imageUrls: string[]): Promise<PostEntity> {
-        return this.postRepository.createPost(createPostDto, user, imageUrls);
+    async likeUnlikePost(
+        postId: number,
+        email: string,
+    ): Promise<string[]> {
+        const post = await this.postRepository.findOne(postId);
+        if (post) {
+            if (!post.likes.includes(email)) {
+                post.likes.push(email);
+                this.logger.verbose(`The user ${email} likes Post ${postId}`);
+            } else {
+                post.likes = post.likes.filter((like) => like !== email);
+                this.logger.verbose(`The user ${email} unlikes Post ${postId}`);
+            }
+            await this.postRepository.save(post);
+            return post.likes;
+        } else {
+            throw new NotFoundException(`Can't find Post with id ${postId}`);
+        }
     }
 
-    public uploadFiles(files: Array<Express.Multer.File>) {
-        const result = [];
-    
-        files.forEach((file) => {
-          const res = {
-            originalname: file.originalname,
-            filename: file.filename
-          };
-          result.push(res);
-        });
-    
-        return result;
-    }
-    
     async getPostById(id: number): Promise<PostEntity> {
         const post = await this.postRepository.findOne(id);
 
@@ -132,7 +136,7 @@ export class PostService {
 
         const words = ['Lorem', 'ipsum', 'dolor', 'sit', 'amet', 'consectetur', 'adipiscing', 'elit', 'sed', 'do', 'eiusmod', 'tempor', 'incididunt', 'ut', 'labore', 'et', 'dolore', 'magna', 'aliqua'];
         function generateRandomSentence(): string {
-            const sentenceLength = Math.floor(Math.random() * 5) + 3;
+            const sentenceLength = Math.floor(Math.random() * 20) + 3;
           
             let sentence = '';
           
@@ -150,7 +154,6 @@ export class PostService {
 
         for (let i = 0; i < count; i++) {
             const post = new CreatePostDto();
-            post.title = words[Math.floor(Math.random() * words.length)];
             post.description = generateRandomSentence();
 
             await this.postRepository.createPost(post, user, shuffledImageNumbers[i]);
