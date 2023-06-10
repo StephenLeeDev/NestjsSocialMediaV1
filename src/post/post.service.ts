@@ -84,7 +84,7 @@ export class PostService {
 
     async createDummyPosts(count: number, user: User): Promise<void> {
 
-        const totalDummy = 14;
+        const totalDummy = 20;
 
         function shuffleArray(array: any[]): any[] {
             const newArray = [...array];
@@ -93,31 +93,32 @@ export class PostService {
               const j = Math.floor(Math.random() * (i + 1));
               [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
             }
-
+          
             return newArray;
         }
           
         function generateRandomArray(): string[][] {
             const numbers = Array.from({ length: totalDummy }, (_, index) => index + 1);
             const shuffledNumbers = shuffleArray(numbers);
-            
+        
+            const serverUrl = process.env.SERVER_URL;
             const result: string[][] = [];
+
             for (let i = 0; i < 10; i++) {
                 const subset: string[] = [];
-            
-                const serverUrl = process.env.SERVER_URL;
-                if (i < 4) {
-                    subset.push(`${serverUrl}/images/dummy/${shuffledNumbers.pop()}.jpeg`);
-                    subset.push(`${serverUrl}/images/dummy/${shuffledNumbers.pop()}.jpeg`);
-                } else {
-                    subset.push(`${serverUrl}/images/dummy/${shuffledNumbers.pop()}.jpeg`);
-                }
-
+                subset.push(`${serverUrl}/images/dummy/${shuffledNumbers[i]}.jpeg`);
                 result.push(subset);
             }
+
+            for (let i = 10; i < shuffledNumbers.length; i++) {
+                const randomIndex = Math.floor(Math.random() * 10);
+                if (result[randomIndex].length < 3) {
+                  result[randomIndex].push(`${serverUrl}/images/dummy/${shuffledNumbers[i]}.jpeg`);
+                }
+            }
+
             return result;
         }
-
 
         const shuffledImageNumbers = generateRandomArray();
 
