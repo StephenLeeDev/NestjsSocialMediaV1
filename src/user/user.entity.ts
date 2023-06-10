@@ -23,10 +23,14 @@ export class User extends BaseEntity {
     @JoinColumn([{ name: 'PostID', referencedColumnName: 'id' }])
     posts: PostEntity[];
 
+    // @CreateDateColumn() // UTC
     @Column()
     createdAt: Date;
 
     @Column({ default: `${serverUrl}/images/default/dafault_thumbnail.png` })
     thumbnail: string;
+
+    @Column('int', { array: true, nullable: false })
+    bookMarks: number[];
 
 }

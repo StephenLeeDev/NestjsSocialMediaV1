@@ -30,6 +30,9 @@ export class PostEntity extends BaseEntity {
     @Column('text', { array: true, nullable: false })
     likes: string[];
 
+    @Column('text', { array: true, nullable: false })
+    bookMarkedUsers: string[];
+
 }
 
 export class PostResponse {

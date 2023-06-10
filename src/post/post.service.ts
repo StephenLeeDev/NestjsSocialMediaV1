@@ -44,20 +44,7 @@ export class PostService {
         postId: number,
         email: string,
     ): Promise<string[]> {
-        const post = await this.postRepository.findOne(postId);
-        if (post) {
-            if (!post.likes.includes(email)) {
-                post.likes.push(email);
-                this.logger.verbose(`The user ${email} likes Post ${postId}`);
-            } else {
-                post.likes = post.likes.filter((like) => like !== email);
-                this.logger.verbose(`The user ${email} unlikes Post ${postId}`);
-            }
-            await this.postRepository.save(post);
-            return post.likes;
-        } else {
-            throw new NotFoundException(`Can't find Post with id ${postId}`);
-        }
+        return await this.postRepository.likeUnlikePost(postId, email);
     }
 
     async getPostById(id: number): Promise<PostEntity> {
