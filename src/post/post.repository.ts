@@ -1,10 +1,12 @@
 import { User } from "src/user/user.entity";
 import { EntityRepository, Repository } from "typeorm";
 import { PostStatus } from "./post-status.enum";
-import { PostEntity, PostResponse } from "./post.entity";
+import { PostEntity } from "./post.entity";
 import { CreatePostDto } from "./dto/create-post.dto";
 import * as moment from 'moment-timezone';
 import { Logger, NotFoundException } from "@nestjs/common";
+import { PostInfoDto, PostResponse } from "./dto/post-info.dto";
+import { CommentEntity } from "src/comment/comment.entity";
 
 @EntityRepository(PostEntity)
 export class PostRepository extends Repository<PostEntity> {
@@ -14,7 +16,7 @@ export class PostRepository extends Repository<PostEntity> {
     async createPost(createPostDto: CreatePostDto, user: User, imageUrls: string[]) : Promise<PostEntity> {
         const { description } = createPostDto;
 
-        const createdAt = moment().tz('Asia/Seoul').format('YYYY-MM-DD HH:mm:ss');
+        const createdAt = moment().tz('Asia/Seoul').format('YYYY-MM-DD HH:mm:ss.SSS'); // You can set your time zone here
         
         const post = this.create({
             description,
@@ -38,6 +40,8 @@ export class PostRepository extends Repository<PostEntity> {
             status: post.status,
             imageUrls,
             likes: post.likes,
+            bookMarkedUsers: post.bookMarkedUsers,
+            comments: [],
             user: {
                 email: user.email,
                 username: user.username
@@ -47,30 +51,10 @@ export class PostRepository extends Repository<PostEntity> {
 
     async getPostListByUser(email: string, page: number, limit: number): Promise<PostResponse> {
 
-        const query = this.createQueryBuilder('post');
-        query
-            .where('post.user.email = :email', { email })
-            .andWhere('post.status = :status', { status: PostStatus.PUBLIC })
+        const query = this.createQueryBuilder('post')
             .leftJoinAndSelect('post.user', 'user')
-            .select(['post.id', 'post.description', 'post.status', 'post.createdAt', 'post.imageUrls', 'user.username', 'user.email', 'user.thumbnail'])
-            .orderBy('post.createdAt', 'DESC')
-            .skip((page - 1) * limit)
-            .take(limit);
-
-        const [posts, total] = await query.getManyAndCount();
-
-        this.logger.verbose(`post list length : ${posts.length}`);
-        this.logger.verbose(`total : ${total}`);
-
-        return { posts, total };
-    }
-
-    async getPostList(page: number, limit: number): Promise<PostResponse> {
-
-        const query = this.createQueryBuilder('post');
-        query
+            .leftJoinAndSelect('post.comments', 'comment')
             .where('post.status = :status', { status: PostStatus.PUBLIC })
-            .leftJoinAndSelect('post.user', 'user')
             .select([
                 'post.id',
                 'post.description',
@@ -81,18 +65,80 @@ export class PostRepository extends Repository<PostEntity> {
                 'post.bookMarkedUsers',
                 'user.username',
                 'user.email',
-                'user.thumbnail'
+                'user.thumbnail',
+                'COUNT(comment.id) as commentCount',
             ])
+            .leftJoin('comment.post', 'post')
+            .groupBy('post.id')
+            .addGroupBy('user.email')
             .orderBy('post.createdAt', 'DESC')
             .skip((page - 1) * limit)
             .take(limit);
-
+    
         const [posts, total] = await query.getManyAndCount();
-
+        
+        posts.map(post => ({
+            ...post,
+            commentCount: post.comments.length,
+        }));
+        
         this.logger.verbose(`post list length : ${posts.length}`);
         this.logger.verbose(`total : ${total}`);
 
-        return { posts, total };
+        return { posts: [], total };
+    }
+
+    async getPostList(page: number, limit: number): Promise<PostResponse> {
+
+        const query = this.createQueryBuilder('post')
+            .leftJoinAndSelect('post.user', 'user')
+            .leftJoin('post.comments', 'comment_entity')
+            .loadRelationCountAndMap('post.commentCount', 'post.comments')
+            .where('post.status = :status', { status: PostStatus.PUBLIC })
+            .select([
+                'post.id',
+                'post.description',
+                'post.status',
+                'post.createdAt',
+                'post.imageUrls',
+                'post.likes',
+                'post.bookMarkedUsers',
+                'user.username',
+                'user.email',
+                'user.thumbnail',
+                'COUNT(comment_entity.id) as commentCount',
+            ])
+            .groupBy('post.id')
+            .addGroupBy('user.email')
+            .orderBy('post.createdAt', 'DESC')
+            .skip((page - 1) * limit)
+            .take(limit);
+        
+        const [posts, total] = await query.getManyAndCount();
+        
+        const postList: PostInfoDto[] = posts.map((post: PostEntity) => {
+            this.logger.verbose(`post.commentCount: ${post.commentCount}`);
+            const postInfo: PostInfoDto = new PostInfoDto();
+            postInfo.id = post.id;
+            postInfo.description = post.description;
+            postInfo.status = post.status;
+            postInfo.email = post.user.email;
+            postInfo.createdAt = post.createdAt;
+            postInfo.updatedAt = post.updatedAt;
+            postInfo.imageUrls = post.imageUrls;
+            postInfo.likes = post.likes;
+            postInfo.bookMarkedUsers = post.bookMarkedUsers;
+            postInfo.commentCount = post.commentCount;
+            return postInfo;
+        });
+
+        this.logger.verbose(`posts: ${JSON.stringify(posts)}`);
+        this.logger.verbose(`postList: ${JSON.stringify(postList)}`);
+        this.logger.verbose(`commentCount: ${postList[0].commentCount}`);
+        this.logger.verbose(`post list length : ${posts.length}`);
+        this.logger.verbose(`total : ${total}`);
+        
+        return { posts: postList, total };
     }
 
     async likeUnlikePost(

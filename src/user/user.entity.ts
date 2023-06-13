@@ -19,8 +19,8 @@ export class User extends BaseEntity {
     @Column()
     username: string;
 
-    @OneToMany(type => PostEntity, post => post.user, { eager: true })
-    @JoinColumn([{ name: 'postID', referencedColumnName: 'id' }])
+    @OneToMany(() => PostEntity, post => post.user, { eager: true })
+    @JoinColumn([{ name: 'postId', referencedColumnName: 'id' }])
     posts: PostEntity[];
 
     // @CreateDateColumn() // UTC

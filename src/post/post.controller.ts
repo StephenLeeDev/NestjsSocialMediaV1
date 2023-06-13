@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Logger, Param, ParseIntPipe, Patch, Post, Query, UploadedFile, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
 import { PostService } from './post.service';
-import { PostEntity, PostResponse } from "./post.entity";
+import { PostEntity } from "./post.entity";
 import { PostStatus } from './post-status.enum';
 import { CreatePostDto } from './dto/create-post.dto';
 import { PostStatusValidationPipe } from './pipe/post-status-validation.pipe';
@@ -13,6 +13,9 @@ import { editFileName, imageFileFilter } from "../lib/multerOptions";
 import { diskStorage } from 'multer';
 import { ConfigService } from '@nestjs/config';
 import { ApiImplicitFile } from '@nestjs/swagger/dist/decorators/api-implicit-file.decorator';
+import { CommentInfoDto } from '../comment/dto/comment-info.dto';
+import { CreateCommentDto } from '../comment/dto/create-comment.dto';
+import { PostResponse } from './dto/post-info.dto';
 
 @ApiTags('POST')
 @UseGuards(AuthGuard())
@@ -151,6 +154,22 @@ export class PostController {
         @Body('status', PostStatusValidationPipe) status: PostStatus,
     ): Promise<PostEntity> {
         return this.postService.updatePostStatus(id, status);
+    }
+
+    @ApiResponse({
+        type: CommentInfoDto,
+        status: 201,
+        description: 'Success',
+    })
+    @ApiBody({ type: CreateCommentDto })
+    @ApiOperation({ summary: `Create a comment` })
+    @Post('/post/comment')
+    createComment(
+        @Body() commentInfoDto: CommentInfoDto,
+        @GetUser() user: User,
+    ): Promise<CommentInfoDto> {
+        commentInfoDto.email = user.email;
+        return this.postService.createComment(commentInfoDto, user);
     }
 
     @ApiResponse({

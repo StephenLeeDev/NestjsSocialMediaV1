@@ -1,6 +1,8 @@
 import { User } from "src/user/user.entity";
-import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { PostStatus } from "./post-status.enum";
+import { CommentEntity } from "src/comment/comment.entity";
+import { PostInfoDto } from "./dto/post-info.dto";
 
 @Entity()
 export class PostEntity extends BaseEntity {
@@ -15,7 +17,7 @@ export class PostEntity extends BaseEntity {
     status: PostStatus;
 
     @ManyToOne(() => User, (user) => user.posts, { eager: false })
-    @JoinColumn([{ name: 'UserEmail', referencedColumnName: 'email' }])
+    @JoinColumn([{ name: 'userEmail', referencedColumnName: 'email' }])
     user: User;
 
     @Column()
@@ -33,9 +35,10 @@ export class PostEntity extends BaseEntity {
     @Column('text', { array: true, nullable: false })
     bookMarkedUsers: string[];
 
-}
+    @OneToMany(() => CommentEntity, comment => comment.post, { eager: true })
+    @JoinColumn([{ name: 'commentId', referencedColumnName: 'id' }])
+    comments: CommentEntity[];
 
-export class PostResponse {
-    posts: PostEntity[];
-    total: number;
+    commentCount: number;
+    
 }

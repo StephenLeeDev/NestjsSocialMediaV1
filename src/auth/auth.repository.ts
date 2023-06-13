@@ -13,7 +13,7 @@ export class AuthRepository extends Repository<User> {
     async createUser(authCredentialsDto: AuthCredentialsDto): Promise<void> {
         const { username, socialType, email } = authCredentialsDto;
 
-        const createdAt = moment().tz('Asia/Seoul').format('YYYY-MM-DD HH:mm:ss'); // You can set your time zone here
+        const createdAt = moment().tz('Asia/Seoul').format('YYYY-MM-DD HH:mm:ss.SSS'); // You can set your time zone here
         const uuid = uuidv4();
         const user =
             this.create({
