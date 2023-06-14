@@ -3,10 +3,11 @@ import { CommentEntity } from "./comment.entity";
 import { CreateCommentDto } from "./dto/create-comment.dto";
 import { CommentInfoDto, CommentInfoListDto } from "./dto/comment-info.dto";
 import * as moment from 'moment-timezone';
-import { Logger } from "@nestjs/common";
+import { Logger, UnauthorizedException } from "@nestjs/common";
 import { CommentType } from "./comment-type.enum";
 import { User } from "src/user/user.entity";
 import { PostEntity } from "src/post/post.entity";
+import { UpdateCommentDto } from "./dto/update-comment.dto";
 
 @EntityRepository(CommentEntity)
 export class CommentRepository extends Repository<CommentEntity> {
@@ -18,7 +19,7 @@ export class CommentRepository extends Repository<CommentEntity> {
         const { content, parentCommentId, parentCommentAuthor } = createCommentDto;
 
         const createdAt = moment().tz('Asia/Seoul').format('YYYY-MM-DD HH:mm:ss.SSS'); // You can set your time zone here
-        var date = new Date(createdAt);
+        const date = new Date(createdAt);
         
         const comment = this.create({
             content,
@@ -50,11 +51,11 @@ export class CommentRepository extends Repository<CommentEntity> {
     }
 
     async getCommentList(postId: number, page: number, limit: number): Promise<CommentInfoListDto> {
-        const query = this.createQueryBuilder('comment')
-        .leftJoinAndSelect('comment.post', 'post')
-        .leftJoinAndSelect('comment.user', 'user')
-        .where('comment.postId = :postId', { postId })
-        .orderBy('comment.createdAt', 'DESC')
+        const query = this.createQueryBuilder('comment_entity')
+        .leftJoinAndSelect('comment_entity.post', 'post')
+        .leftJoinAndSelect('comment_entity.user', 'user')
+        .where('comment_entity.postId = :postId', { postId })
+        .orderBy('comment_entity.createdAt', 'DESC')
         .skip((page - 1) * limit)
         .take(limit);
     
@@ -75,6 +76,37 @@ export class CommentRepository extends Repository<CommentEntity> {
       });
     
       return { comments: commentList, total };
+    }
+
+    async updateComment(updateCommentDto: UpdateCommentDto, user: User): Promise<CommentInfoDto> {
+
+        const { id, content } = updateCommentDto;
+        const comment = await this.findOne(id, { relations: ['user', 'post'] });
+
+        if (comment) {
+            if (comment.user.email != user.email) {
+                throw new UnauthorizedException('You do not have permission to update this comment');
+            }
+            else {
+                const updatedAt = moment().tz('Asia/Seoul').format('YYYY-MM-DD HH:mm:ss.SSS'); // You can set your time zone here
+                comment.updatedAt = new Date(updatedAt);
+                comment.content = content;
+                this.save(comment);
+                
+                var updatedComment = new CommentInfoDto();
+                updatedComment.id = comment.id;
+                updatedComment.content = comment.content;
+                updatedComment.type = comment.type;
+                updatedComment.parentCommentId = comment.parentCommentId;
+                updatedComment.parentCommentAuthor = comment.parentCommentAuthor;
+                updatedComment.postId = comment.post.id;
+                updatedComment.email = comment.user.email;
+                updatedComment.createdAt = comment.createdAt;
+                updatedComment.updatedAt = comment.updatedAt;
+
+                return updatedComment;
+            }
+        }
     }
 
 }

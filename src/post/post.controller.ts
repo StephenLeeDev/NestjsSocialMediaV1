@@ -16,6 +16,7 @@ import { ApiImplicitFile } from '@nestjs/swagger/dist/decorators/api-implicit-fi
 import { CommentInfoDto, CommentInfoListDto } from '../comment/dto/comment-info.dto';
 import { CreateCommentDto } from '../comment/dto/create-comment.dto';
 import { PostResponse } from './dto/post-info.dto';
+import { UpdateCommentDto } from 'src/comment/dto/update-comment.dto';
 
 @ApiTags('POST')
 @UseGuards(AuthGuard())
@@ -163,7 +164,7 @@ export class PostController {
     })
     @ApiBody({ type: CreateCommentDto })
     @ApiOperation({ summary: `Create a comment` })
-    @Post('/post/comment')
+    @Post('/comment')
     createComment(
         @Body() commentInfoDto: CommentInfoDto,
         @GetUser() user: User,
@@ -193,13 +194,28 @@ export class PostController {
         required: true,
     })
     @ApiOperation({ summary: `Get comments list of the post` })
-    @Get('/post/comment')
+    @Get('/comment')
     getCommentList(
-        @Query('postId') postId: number,
+        @Query('postId', ParseIntPipe) postId: number,
         @Query('page', ParseIntPipe) page: number,
         @Query('limit', ParseIntPipe) limit: number,
     ): Promise<CommentInfoListDto> {
         return this.postService.getCommentList(postId, page, limit);
+    }
+
+    @ApiResponse({
+        type: CommentInfoDto,
+        status: 200,
+        description: 'Success',
+    })
+    @ApiBody({ type: UpdateCommentDto })
+    @ApiOperation({ summary: `Get comments list of the post` })
+    @Patch('/comment')
+    updateComment(
+        @Body() updateCommentDto: UpdateCommentDto,
+        @GetUser() user: User,
+    ): Promise<CommentInfoDto> {
+        return this.postService.updateComment(updateCommentDto, user);
     }
 
     @ApiResponse({

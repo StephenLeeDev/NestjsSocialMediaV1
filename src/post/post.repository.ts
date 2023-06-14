@@ -52,7 +52,7 @@ export class PostRepository extends Repository<PostEntity> {
 
         const query = this.createQueryBuilder('post')
             .leftJoinAndSelect('post.user', 'user')
-            .leftJoinAndSelect('post.comments', 'comment')
+            .leftJoinAndSelect('post.comments', 'comment_entity')
             .where('post.status = :status', { status: PostStatus.PUBLIC })
             .select([
                 'post.id',
@@ -65,9 +65,9 @@ export class PostRepository extends Repository<PostEntity> {
                 'user.username',
                 'user.email',
                 'user.thumbnail',
-                'COUNT(comment.id) as commentCount',
+                'COUNT(comment_entity.id) as commentCount',
             ])
-            .leftJoin('comment.post', 'post')
+            .leftJoin('comment_entity.post', 'post')
             .groupBy('post.id')
             .addGroupBy('user.email')
             .orderBy('post.createdAt', 'DESC')
