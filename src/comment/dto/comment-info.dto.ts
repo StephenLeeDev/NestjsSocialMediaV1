@@ -64,3 +64,13 @@ export class CommentInfoDto {
     updatedAt: Date;
     
 }
+
+export class CommentInfoListDto {
+    @ApiProperty({ type: [CommentInfoDto] })
+    comments: CommentInfoDto[];
+    @ApiProperty({
+        example: 10,
+        description: `The comment's total count can call`,
+    })
+    total: number;
+}

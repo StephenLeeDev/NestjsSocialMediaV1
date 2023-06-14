@@ -6,7 +6,6 @@ import { CreatePostDto } from "./dto/create-post.dto";
 import * as moment from 'moment-timezone';
 import { Logger, NotFoundException } from "@nestjs/common";
 import { PostInfoDto, PostResponse } from "./dto/post-info.dto";
-import { CommentEntity } from "src/comment/comment.entity";
 
 @EntityRepository(PostEntity)
 export class PostRepository extends Repository<PostEntity> {
@@ -117,7 +116,6 @@ export class PostRepository extends Repository<PostEntity> {
         const [posts, total] = await query.getManyAndCount();
         
         const postList: PostInfoDto[] = posts.map((post: PostEntity) => {
-            this.logger.verbose(`post.commentCount: ${post.commentCount}`);
             const postInfo: PostInfoDto = new PostInfoDto();
             postInfo.id = post.id;
             postInfo.description = post.description;
@@ -132,12 +130,6 @@ export class PostRepository extends Repository<PostEntity> {
             return postInfo;
         });
 
-        this.logger.verbose(`posts: ${JSON.stringify(posts)}`);
-        this.logger.verbose(`postList: ${JSON.stringify(postList)}`);
-        this.logger.verbose(`commentCount: ${postList[0].commentCount}`);
-        this.logger.verbose(`post list length : ${posts.length}`);
-        this.logger.verbose(`total : ${total}`);
-        
         return { posts: postList, total };
     }
 

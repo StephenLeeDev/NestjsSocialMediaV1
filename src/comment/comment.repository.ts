@@ -1,7 +1,7 @@
 import { EntityRepository, Repository } from "typeorm";
 import { CommentEntity } from "./comment.entity";
 import { CreateCommentDto } from "./dto/create-comment.dto";
-import { CommentInfoDto } from "./dto/comment-info.dto";
+import { CommentInfoDto, CommentInfoListDto } from "./dto/comment-info.dto";
 import * as moment from 'moment-timezone';
 import { Logger } from "@nestjs/common";
 import { CommentType } from "./comment-type.enum";
@@ -47,6 +47,34 @@ export class CommentRepository extends Repository<CommentEntity> {
         created.updatedAt = comment.updatedAt;
 
         return created;
+    }
+
+    async getCommentList(postId: number, page: number, limit: number): Promise<CommentInfoListDto> {
+        const query = this.createQueryBuilder('comment')
+        .leftJoinAndSelect('comment.post', 'post')
+        .leftJoinAndSelect('comment.user', 'user')
+        .where('comment.postId = :postId', { postId })
+        .orderBy('comment.createdAt', 'DESC')
+        .skip((page - 1) * limit)
+        .take(limit);
+    
+      const [comments, total] = await query.getManyAndCount();
+    
+      const commentList: CommentInfoDto[] = comments.map((comment: CommentEntity) => {
+        const commentInfo: CommentInfoDto = new CommentInfoDto();
+        commentInfo.id = comment.id;
+        commentInfo.content = comment.content;
+        commentInfo.type = comment.type;
+        commentInfo.parentCommentId = comment.parentCommentId;
+        commentInfo.parentCommentAuthor = comment.parentCommentAuthor;
+        commentInfo.postId = comment.post.id;
+        commentInfo.email = comment.user.email;
+        commentInfo.createdAt = comment.createdAt;
+        commentInfo.updatedAt = comment.updatedAt;
+        return commentInfo;
+      });
+    
+      return { comments: commentList, total };
     }
 
 }

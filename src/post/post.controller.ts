@@ -13,7 +13,7 @@ import { editFileName, imageFileFilter } from "../lib/multerOptions";
 import { diskStorage } from 'multer';
 import { ConfigService } from '@nestjs/config';
 import { ApiImplicitFile } from '@nestjs/swagger/dist/decorators/api-implicit-file.decorator';
-import { CommentInfoDto } from '../comment/dto/comment-info.dto';
+import { CommentInfoDto, CommentInfoListDto } from '../comment/dto/comment-info.dto';
 import { CreateCommentDto } from '../comment/dto/create-comment.dto';
 import { PostResponse } from './dto/post-info.dto';
 
@@ -170,6 +170,36 @@ export class PostController {
     ): Promise<CommentInfoDto> {
         commentInfoDto.email = user.email;
         return this.postService.createComment(commentInfoDto, user);
+    }
+
+    @ApiResponse({
+        type: CommentInfoListDto,
+        status: 200,
+        description: 'Success',
+    })
+    @ApiQuery({
+        name: 'postId',
+        description: `The post's ID`,
+        required: true,
+    })
+    @ApiQuery({
+        name: 'page',
+        description: `The page's number to call`,
+        required: true,
+    })
+    @ApiQuery({
+        name: 'limit',
+        description: `The number of items on a single page`,
+        required: true,
+    })
+    @ApiOperation({ summary: `Get comments list of the post` })
+    @Get('/post/comment')
+    getCommentList(
+        @Query('postId') postId: number,
+        @Query('page', ParseIntPipe) page: number,
+        @Query('limit', ParseIntPipe) limit: number,
+    ): Promise<CommentInfoListDto> {
+        return this.postService.getCommentList(postId, page, limit);
     }
 
     @ApiResponse({

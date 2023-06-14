@@ -6,7 +6,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { PostEntity } from './post.entity';
 import { User } from 'src/user/user.entity';
 import { CommentRepository } from 'src/comment/comment.repository';
-import { CommentInfoDto } from 'src/comment/dto/comment-info.dto';
+import { CommentInfoDto, CommentInfoListDto } from 'src/comment/dto/comment-info.dto';
 import { CreateCommentDto } from 'src/comment/dto/create-comment.dto';
 import { PostResponse } from './dto/post-info.dto';
 
@@ -91,6 +91,10 @@ export class PostService {
     async createComment(createCommentDto: CreateCommentDto, user: User): Promise<CommentInfoDto> {
         const post = await this.getPostById(createCommentDto.postId);
         return await this.commentRepository.createComment(createCommentDto, user, post);
+    }
+
+    async getCommentList(postId: number, page: number, limit: number): Promise<CommentInfoListDto> {
+        return await this.commentRepository.getCommentList(postId, page, limit);
     }
 
     async createDummyPosts(count: number, user: User): Promise<void> {
