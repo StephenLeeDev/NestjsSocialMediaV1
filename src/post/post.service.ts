@@ -5,19 +5,13 @@ import { PostRepository } from './post.repository';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PostEntity } from './post.entity';
 import { User } from 'src/user/user.entity';
-import { CommentRepository } from 'src/comment/comment.repository';
-import { CommentInfoDto, CommentInfoListDto } from 'src/comment/dto/comment-info.dto';
-import { CreateCommentDto } from 'src/comment/dto/create-comment.dto';
 import { PostResponse } from './dto/post-info.dto';
-import { UpdateCommentDto } from 'src/comment/dto/update-comment.dto';
 
 @Injectable()
 export class PostService {
     constructor(
         @InjectRepository(PostRepository)
         private postRepository: PostRepository,
-        @InjectRepository(CommentRepository)
-        private commentRepository: CommentRepository,
     ) { }
 
     private logger = new Logger('PostService');
@@ -87,19 +81,6 @@ export class PostService {
         await this.postRepository.save(post);
 
         return post;
-    }
-
-    async createComment(createCommentDto: CreateCommentDto, user: User): Promise<CommentInfoDto> {
-        const post = await this.getPostById(createCommentDto.postId);
-        return await this.commentRepository.createComment(createCommentDto, user, post);
-    }
-
-    async getCommentList(postId: number, page: number, limit: number): Promise<CommentInfoListDto> {
-        return await this.commentRepository.getCommentList(postId, page, limit);
-    }
-
-    async updateComment(updateCommentDto: UpdateCommentDto, user: User): Promise<CommentInfoDto> {
-        return await this.commentRepository.updateComment(updateCommentDto, user);
     }
 
     async createDummyPosts(count: number, user: User): Promise<void> {

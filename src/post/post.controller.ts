@@ -7,7 +7,7 @@ import { PostStatusValidationPipe } from './pipe/post-status-validation.pipe';
 import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from 'src/auth/get-user.decorator';
 import { User } from 'src/user/user.entity';
-import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { editFileName, imageFileFilter } from "../lib/multerOptions";
 import { diskStorage } from 'multer';
@@ -155,67 +155,6 @@ export class PostController {
         @Body('status', PostStatusValidationPipe) status: PostStatus,
     ): Promise<PostEntity> {
         return this.postService.updatePostStatus(id, status);
-    }
-
-    @ApiResponse({
-        type: CommentInfoDto,
-        status: 201,
-        description: 'Success',
-    })
-    @ApiBody({ type: CreateCommentDto })
-    @ApiOperation({ summary: `Create a comment` })
-    @Post('/comment')
-    createComment(
-        @Body() commentInfoDto: CommentInfoDto,
-        @GetUser() user: User,
-    ): Promise<CommentInfoDto> {
-        commentInfoDto.email = user.email;
-        return this.postService.createComment(commentInfoDto, user);
-    }
-
-    @ApiResponse({
-        type: CommentInfoListDto,
-        status: 200,
-        description: 'Success',
-    })
-    @ApiQuery({
-        name: 'postId',
-        description: `The post's ID`,
-        required: true,
-    })
-    @ApiQuery({
-        name: 'page',
-        description: `The page's number to call`,
-        required: true,
-    })
-    @ApiQuery({
-        name: 'limit',
-        description: `The number of items on a single page`,
-        required: true,
-    })
-    @ApiOperation({ summary: `Get comments list of the post` })
-    @Get('/comment')
-    getCommentList(
-        @Query('postId', ParseIntPipe) postId: number,
-        @Query('page', ParseIntPipe) page: number,
-        @Query('limit', ParseIntPipe) limit: number,
-    ): Promise<CommentInfoListDto> {
-        return this.postService.getCommentList(postId, page, limit);
-    }
-
-    @ApiResponse({
-        type: CommentInfoDto,
-        status: 200,
-        description: 'Success',
-    })
-    @ApiBody({ type: UpdateCommentDto })
-    @ApiOperation({ summary: `Get comments list of the post` })
-    @Patch('/comment')
-    updateComment(
-        @Body() updateCommentDto: UpdateCommentDto,
-        @GetUser() user: User,
-    ): Promise<CommentInfoDto> {
-        return this.postService.updateComment(updateCommentDto, user);
     }
 
     @ApiResponse({
