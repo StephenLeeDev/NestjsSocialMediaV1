@@ -6,13 +6,14 @@ import { CreatePostDto } from "./dto/create-post.dto";
 import * as moment from 'moment-timezone';
 import { Logger, NotFoundException } from "@nestjs/common";
 import { PostInfoDto, PostResponse } from "./dto/post-info.dto";
+import { UserInfoDto } from "src/user/dto/user-info.dto";
 
 @EntityRepository(PostEntity)
 export class PostRepository extends Repository<PostEntity> {
 
     private logger = new Logger('PostRepository');
 
-    async createPost(createPostDto: CreatePostDto, user: User, imageUrls: string[]) : Promise<PostEntity> {
+    async createPost(createPostDto: CreatePostDto, user: User, imageUrls: string[]) : Promise<PostInfoDto> {
         const { description } = createPostDto;
 
         const createdAt = moment().tz('Asia/Seoul').format('YYYY-MM-DD HH:mm:ss.SSS'); // You can set your time zone here
@@ -31,29 +32,33 @@ export class PostRepository extends Repository<PostEntity> {
         await this.save(post);
 
         this.logger.verbose(`${user.email}'s new post has created.`);
-        return {
-            id: post.id,
-            description: post.description,
-            createdAt: post.createdAt,
-            updatedAt: post.updatedAt,
-            status: post.status,
-            imageUrls,
-            likes: post.likes,
-            bookMarkedUsers: post.bookMarkedUsers,
-            comments: [],
-            user: {
-                email: user.email,
-                username: user.username
-            }
-        } as PostEntity;
+
+        const postInfo: PostInfoDto = new PostInfoDto();
+        postInfo.id = post.id;
+        postInfo.description = post.description;
+        postInfo.status = post.status;
+        postInfo.user = new UserInfoDto();
+        postInfo.user.email = post.user.email;
+        postInfo.user.username = post.user.username;
+        postInfo.user.thumbnail = post.user.thumbnail;
+        postInfo.createdAt = post.createdAt;
+        postInfo.updatedAt = post.updatedAt;
+        postInfo.imageUrls = post.imageUrls;
+        postInfo.likes = post.likes;
+        postInfo.bookMarkedUsers = post.bookMarkedUsers;
+        postInfo.commentCount = post.commentCount;
+
+        return postInfo;
     }
 
     async getPostListByUser(email: string, page: number, limit: number): Promise<PostResponse> {
 
         const query = this.createQueryBuilder('post')
             .leftJoinAndSelect('post.user', 'user')
-            .leftJoinAndSelect('post.comments', 'comment_entity')
-            .where('post.status = :status', { status: PostStatus.PUBLIC })
+            .leftJoin('post.comments', 'comment_entity')
+            .loadRelationCountAndMap('post.commentCount', 'post.comments')
+            .where('user.email = :email', { email })
+            .andWhere('post.status = :status', { status: PostStatus.PUBLIC })
             .select([
                 'post.id',
                 'post.description',
@@ -67,24 +72,33 @@ export class PostRepository extends Repository<PostEntity> {
                 'user.thumbnail',
                 'COUNT(comment_entity.id) as commentCount',
             ])
-            .leftJoin('comment_entity.post', 'post')
             .groupBy('post.id')
             .addGroupBy('user.email')
             .orderBy('post.createdAt', 'DESC')
             .skip((page - 1) * limit)
             .take(limit);
-    
+        
         const [posts, total] = await query.getManyAndCount();
         
-        posts.map(post => ({
-            ...post,
-            commentCount: post.comments.length,
-        }));
-        
-        this.logger.verbose(`post list length : ${posts.length}`);
-        this.logger.verbose(`total : ${total}`);
+        const postList: PostInfoDto[] = posts.map((post: PostEntity) => {
+            const postInfo: PostInfoDto = new PostInfoDto();
+            postInfo.id = post.id;
+            postInfo.description = post.description;
+            postInfo.status = post.status;
+            postInfo.user = new UserInfoDto();
+            postInfo.user.email = post.user.email;
+            postInfo.user.username = post.user.username;
+            postInfo.user.thumbnail = post.user.thumbnail;
+            postInfo.createdAt = post.createdAt;
+            postInfo.updatedAt = post.updatedAt;
+            postInfo.imageUrls = post.imageUrls;
+            postInfo.likes = post.likes;
+            postInfo.bookMarkedUsers = post.bookMarkedUsers;
+            postInfo.commentCount = post.commentCount;
+            return postInfo;
+        });
 
-        return { posts: [], total };
+        return { posts: postList, total };
     }
 
     async getPostList(page: number, limit: number): Promise<PostResponse> {
@@ -120,7 +134,10 @@ export class PostRepository extends Repository<PostEntity> {
             postInfo.id = post.id;
             postInfo.description = post.description;
             postInfo.status = post.status;
-            postInfo.email = post.user.email;
+            postInfo.user = new UserInfoDto();
+            postInfo.user.email = post.user.email;
+            postInfo.user.username = post.user.username;
+            postInfo.user.thumbnail = post.user.thumbnail;
             postInfo.createdAt = post.createdAt;
             postInfo.updatedAt = post.updatedAt;
             postInfo.imageUrls = post.imageUrls;

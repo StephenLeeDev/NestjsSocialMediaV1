@@ -5,7 +5,8 @@ import { PostRepository } from './post.repository';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PostEntity } from './post.entity';
 import { User } from 'src/user/user.entity';
-import { PostResponse } from './dto/post-info.dto';
+import { PostInfoDto, PostResponse } from './dto/post-info.dto';
+import { UserInfoDto } from 'src/user/dto/user-info.dto';
 
 @Injectable()
 export class PostService {
@@ -16,7 +17,7 @@ export class PostService {
 
     private logger = new Logger('PostService');
 
-    async createPost(createPostDto: CreatePostDto, user: User, imageUrls: string[]): Promise<PostEntity> {
+    async createPost(createPostDto: CreatePostDto, user: User, imageUrls: string[]): Promise<PostInfoDto> {
         return this.postRepository.createPost(createPostDto, user, imageUrls);
     }
 
@@ -48,16 +49,31 @@ export class PostService {
         return await this.postRepository.likeUnlikePost(postId, email);
     }
 
-    async getPostById(id: number): Promise<PostEntity> {
-        const post = await this.postRepository.findOne(id);
+    async getPostById(id: number): Promise<PostInfoDto> {
+        const post = await this.postRepository.findOne(id, { relations: ['user'] });
 
         if (!post) {
             this.logger.error(`Can't find Post with id ${id}`);
             throw new NotFoundException(`Can't find Post with id ${id}`);
         }
 
-        this.logger.verbose(`post : ${post}`);
-        return post;
+        const postInfo: PostInfoDto = new PostInfoDto();
+        postInfo.id = post.id;
+        postInfo.description = post.description;
+        postInfo.status = post.status;
+        postInfo.user = new UserInfoDto();
+        postInfo.user.email = post.user.email;
+        postInfo.user.username = post.user.username;
+        postInfo.user.thumbnail = post.user.thumbnail;
+        postInfo.createdAt = post.createdAt;
+        postInfo.updatedAt = post.updatedAt;
+        postInfo.imageUrls = post.imageUrls;
+        postInfo.likes = post.likes;
+        postInfo.bookMarkedUsers = post.bookMarkedUsers;
+        postInfo.commentCount = post.commentCount;
+
+        this.logger.verbose(`post : ${postInfo}`);
+        return postInfo;
     }
 
     async deletePost(
@@ -74,18 +90,21 @@ export class PostService {
         this.logger.verbose(`result ${result}`);
     }
 
-    async updatePostStatus(id: number, status: PostStatus): Promise<PostEntity> {
+    async updatePostStatus(id: number): Promise<void> {
         const post = await this.getPostById(id);
 
-        post.status = status;
+        if (!post) {
+            this.logger.error(`Can't find Post with id ${id}`);
+            throw new NotFoundException(`Can't find Post with id ${id}`);
+        }
+    
+        post.status = post.status == PostStatus.PUBLIC ? PostStatus.PRIVATE : PostStatus.PUBLIC;
         await this.postRepository.save(post);
-
-        return post;
     }
 
     async createDummyPosts(count: number, user: User): Promise<void> {
 
-        const totalDummy = 20;
+        const totalImageCount = 20;
 
         function shuffleArray(array: any[]): any[] {
             const newArray = [...array];
@@ -99,7 +118,7 @@ export class PostService {
         }
           
         function generateRandomArray(): string[][] {
-            const numbers = Array.from({ length: totalDummy }, (_, index) => index + 1);
+            const numbers = Array.from({ length: totalImageCount }, (_, index) => index + 1);
             const shuffledNumbers = shuffleArray(numbers);
         
             const serverUrl = process.env.SERVER_URL;

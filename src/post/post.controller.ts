@@ -15,7 +15,7 @@ import { ConfigService } from '@nestjs/config';
 import { ApiImplicitFile } from '@nestjs/swagger/dist/decorators/api-implicit-file.decorator';
 import { CommentInfoDto, CommentInfoListDto } from '../comment/dto/comment-info.dto';
 import { CreateCommentDto } from '../comment/dto/create-comment.dto';
-import { PostResponse } from './dto/post-info.dto';
+import { PostInfoDto, PostResponse } from './dto/post-info.dto';
 import { UpdateCommentDto } from 'src/comment/dto/update-comment.dto';
 
 @ApiTags('POST')
@@ -32,7 +32,7 @@ export class PostController {
     ) { }
 
     @ApiResponse({
-        type: PostEntity,
+        type: PostInfoDto,
         status: 200,
         description: 'Success',
     })
@@ -52,7 +52,7 @@ export class PostController {
         @Body() createPostDto: CreatePostDto,
         @GetUser() user: User,
         @UploadedFiles() files: Array<Express.Multer.File>,
-    ): Promise<PostEntity> {
+    ): Promise<PostInfoDto> {
 
         return this.postService.createPost(
             createPostDto,
@@ -117,7 +117,7 @@ export class PostController {
 
     @ApiResponse({
         type: [String],
-        status: 200,
+        status: 201,
         description: 'Success',
     })
     @ApiQuery({
@@ -125,6 +125,7 @@ export class PostController {
         description: `The ID of the post to add/remove a like to`,
         required: true,
     })
+    @ApiOperation({ summary: 'Add or remove a like to the post' })
     @Post('/:postId/like')
     likePost(
         @GetUser() user: User,
@@ -136,12 +137,28 @@ export class PostController {
         );
     }
 
+    @ApiResponse({
+        type: PostInfoDto,
+        status: 200,
+        description: 'Success',
+    })
+    @ApiOperation({ summary: 'Get the post infomation by id' })
     @Get('/:id')
-    getPostById(@Param('id') id: number): Promise<PostEntity> {
+    getPostById(@Param('id') id: number): Promise<PostInfoDto> {
         return this.postService.getPostById(id);
     }
 
+    @ApiResponse({
+        status: 200,
+        description: 'Success',
+    })
+    @ApiParam({
+      name: 'id',
+      required: true,
+      description: 'The post ID to delete',
+    })
     @Delete('/:id')
+    @ApiOperation({ summary: 'Delete the post by id' })
     deletePost(
         @Param('id', ParseIntPipe) id,
         @GetUser() user: User
@@ -149,12 +166,16 @@ export class PostController {
         return this.postService.deletePost(id, user);
     }
 
+    @ApiResponse({
+        status: 200,
+        description: 'Success',
+    })
+    @ApiOperation({ summary: `Modify the post status` })
     @Patch('/:id/status')
     updatePostStatus(
         @Param('id', ParseIntPipe) id: number,
-        @Body('status', PostStatusValidationPipe) status: PostStatus,
-    ): Promise<PostEntity> {
-        return this.postService.updatePostStatus(id, status);
+    ): Promise<void> {
+        return this.postService.updatePostStatus(id);
     }
 
     @ApiResponse({
