@@ -3,7 +3,6 @@ import { PostStatus } from './post-status.enum';
 import { CreatePostDto } from './dto/create-post.dto';
 import { PostRepository } from './post.repository';
 import { InjectRepository } from '@nestjs/typeorm';
-import { PostEntity } from './post.entity';
 import { User } from 'src/user/user.entity';
 import { PostInfoDto, PostResponse } from './dto/post-info.dto';
 import { UserInfoDto } from 'src/user/dto/user-info.dto';

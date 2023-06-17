@@ -1,9 +1,6 @@
 import { Body, Controller, Delete, Get, Logger, Param, ParseIntPipe, Patch, Post, Query, UploadedFile, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
 import { PostService } from './post.service';
-import { PostEntity } from "./post.entity";
-import { PostStatus } from './post-status.enum';
 import { CreatePostDto } from './dto/create-post.dto';
-import { PostStatusValidationPipe } from './pipe/post-status-validation.pipe';
 import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from 'src/auth/get-user.decorator';
 import { User } from 'src/user/user.entity';
@@ -13,10 +10,7 @@ import { editFileName, imageFileFilter } from "../lib/multerOptions";
 import { diskStorage } from 'multer';
 import { ConfigService } from '@nestjs/config';
 import { ApiImplicitFile } from '@nestjs/swagger/dist/decorators/api-implicit-file.decorator';
-import { CommentInfoDto, CommentInfoListDto } from '../comment/dto/comment-info.dto';
-import { CreateCommentDto } from '../comment/dto/create-comment.dto';
 import { PostInfoDto, PostResponse } from './dto/post-info.dto';
-import { UpdateCommentDto } from 'src/comment/dto/update-comment.dto';
 
 @ApiTags('POST')
 @UseGuards(AuthGuard())

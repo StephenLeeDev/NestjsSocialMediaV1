@@ -2,7 +2,6 @@ import { User } from "src/user/user.entity";
 import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { PostStatus } from "./post-status.enum";
 import { CommentEntity } from "src/comment/comment.entity";
-import { PostInfoDto } from "./dto/post-info.dto";
 
 @Entity()
 export class PostEntity extends BaseEntity {
