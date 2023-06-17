@@ -8,6 +8,7 @@ import { CommentType } from "./comment-type.enum";
 import { User } from "src/user/user.entity";
 import { PostEntity } from "src/post/post.entity";
 import { UpdateCommentDto } from "./dto/update-comment.dto";
+import { UserSimpleInfoDto } from "src/user/dto/user-simple-info.dto";
 
 @EntityRepository(CommentEntity)
 export class CommentRepository extends Repository<CommentEntity> {
@@ -43,18 +44,60 @@ export class CommentRepository extends Repository<CommentEntity> {
         created.parentCommentId = comment.parentCommentId;
         created.parentCommentAuthor = comment.parentCommentAuthor;
         created.postId = comment.post.id;
-        created.email = comment.user.email;
+        created.user = new UserSimpleInfoDto();
+        created.user.email = comment.user.email;
+        created.user.thumbnail = comment.user.thumbnail;
+        created.user.username = comment.user.username;
         created.createdAt = comment.createdAt;
         created.updatedAt = comment.updatedAt;
 
         return created;
     }
 
+    // Search only comments
     async getCommentList(postId: number, page: number, limit: number): Promise<CommentInfoListDto> {
+        const query = this.createQueryBuilder('comment_entity')
+            .leftJoinAndSelect('comment_entity.post', 'post')
+            .leftJoinAndSelect('comment_entity.user', 'user')
+            .leftJoin('comment_entity.childComments', 'children')
+            .loadRelationCountAndMap('comment_entity.childrenCount', 'comment_entity.childComments')
+            .where('comment_entity.postId = :postId', { postId })
+            .andWhere('comment_entity.type = :type', { type: CommentType.Comment })
+            .orderBy('comment_entity.createdAt', 'DESC')
+            .skip((page - 1) * limit)
+            .take(limit);
+      
+        const [comments, total] = await query.getManyAndCount();
+      
+        const commentList: CommentInfoDto[] = comments.map((comment: CommentEntity) => {
+          const commentInfo: CommentInfoDto = new CommentInfoDto();
+          commentInfo.id = comment.id;
+          commentInfo.content = comment.content;
+          commentInfo.type = comment.type;
+          commentInfo.parentCommentId = comment.parentCommentId;
+          commentInfo.parentCommentAuthor = comment.parentCommentAuthor;
+          commentInfo.postId = comment.post.id;
+          commentInfo.user = new UserSimpleInfoDto();
+          commentInfo.user.email = comment.user.email;
+          commentInfo.user.thumbnail = comment.user.thumbnail;
+          commentInfo.user.username = comment.user.username;
+          commentInfo.createdAt = comment.createdAt;
+          commentInfo.updatedAt = comment.updatedAt;
+          commentInfo.childrenCount = comment.childrenCount; // Modified line
+          return commentInfo;
+        });
+      
+        return { comments: commentList, total };
+    }
+    
+    // Search only replies by parentCommentId
+    async getReplyListByParentCommentId(parentCommentId: number, postId: number, page: number, limit: number): Promise<CommentInfoListDto> {
         const query = this.createQueryBuilder('comment_entity')
         .leftJoinAndSelect('comment_entity.post', 'post')
         .leftJoinAndSelect('comment_entity.user', 'user')
         .where('comment_entity.postId = :postId', { postId })
+        .andWhere('comment_entity.parentCommentId = :parentCommentId', { parentCommentId })
+        .andWhere('comment_entity.type = :type', { type: CommentType.Reply })
         .orderBy('comment_entity.createdAt', 'DESC')
         .skip((page - 1) * limit)
         .take(limit);
@@ -69,7 +112,10 @@ export class CommentRepository extends Repository<CommentEntity> {
         commentInfo.parentCommentId = comment.parentCommentId;
         commentInfo.parentCommentAuthor = comment.parentCommentAuthor;
         commentInfo.postId = comment.post.id;
-        commentInfo.email = comment.user.email;
+        commentInfo.user = new UserSimpleInfoDto();
+        commentInfo.user.email = comment.user.email;
+        commentInfo.user.thumbnail = comment.user.thumbnail;
+        commentInfo.user.username = comment.user.username;
         commentInfo.createdAt = comment.createdAt;
         commentInfo.updatedAt = comment.updatedAt;
         return commentInfo;
@@ -100,7 +146,10 @@ export class CommentRepository extends Repository<CommentEntity> {
                 updatedComment.parentCommentId = comment.parentCommentId;
                 updatedComment.parentCommentAuthor = comment.parentCommentAuthor;
                 updatedComment.postId = comment.post.id;
-                updatedComment.email = comment.user.email;
+                updatedComment.user = new UserSimpleInfoDto();
+                updatedComment.user.email = comment.user.email;
+                updatedComment.user.thumbnail = comment.user.thumbnail;
+                updatedComment.user.username = comment.user.username;
                 updatedComment.createdAt = comment.createdAt;
                 updatedComment.updatedAt = comment.updatedAt;
 

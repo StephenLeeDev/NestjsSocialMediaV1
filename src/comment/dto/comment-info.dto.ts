@@ -1,6 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { IsNotEmpty } from "class-validator";
 import { CommentType } from "src/comment/comment-type.enum";
+import { UserSimpleInfoDto } from "src/user/dto/user-simple-info.dto";
 
 export class CommentInfoDto {
 
@@ -42,13 +43,9 @@ export class CommentInfoDto {
     @IsNotEmpty()
     postId: number;
       
-    @ApiProperty({
-        example: `john@gmail.com`,
-        description: `The email of its author.`,
-    })
-    @IsNotEmpty()
-    email: string;
-    
+    @ApiProperty({ type: [UserSimpleInfoDto] })
+    user: UserSimpleInfoDto
+        
     @ApiProperty({
         example: `2022-06-12 06:00:22.206Z`,
         description: `The created date the comment.`,
@@ -62,6 +59,12 @@ export class CommentInfoDto {
     })
     @IsNotEmpty()
     updatedAt: Date;
+    
+    @ApiProperty({
+        example: 3,
+        description: `The replies count of the comment`,
+    })
+    childrenCount: number;
     
 }
 

@@ -1,4 +1,4 @@
-import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { User } from "src/user/user.entity";
 import { CommentType } from "./comment-type.enum";
 import { PostEntity } from "src/post/post.entity";
@@ -21,6 +21,13 @@ export class CommentEntity extends BaseEntity {
     @Column({ nullable: true })
     parentCommentAuthor: string;
 
+    @ManyToOne(() => CommentEntity, comment => comment.childComments)
+    @JoinColumn({ name: 'parentCommentId' })
+    parentComment: CommentEntity;
+  
+    @OneToMany(() => CommentEntity, comment => comment.parentComment)
+    childComments: CommentEntity[];
+    
     @ManyToOne(() => PostEntity, (post) => post.comments, { eager: false })
     @JoinColumn([{ name: 'postId', referencedColumnName: 'id' }])
     post: PostEntity;
@@ -35,4 +42,5 @@ export class CommentEntity extends BaseEntity {
     @Column()
     updatedAt: Date;
 
+    childrenCount: number;
 }

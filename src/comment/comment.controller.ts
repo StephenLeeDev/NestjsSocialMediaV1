@@ -32,7 +32,6 @@ export class CommentController {
         @Body() commentInfoDto: CommentInfoDto,
         @GetUser() user: User,
     ): Promise<CommentInfoDto> {
-        commentInfoDto.email = user.email;
         return this.commentService.createComment(commentInfoDto, user);
     }
 
@@ -67,12 +66,48 @@ export class CommentController {
     }
 
     @ApiResponse({
+        type: CommentInfoListDto,
+        status: 200,
+        description: 'Success',
+    })
+    @ApiQuery({
+        name: 'parentCommentId',
+        description: `The parent comment's ID`,
+        required: true,
+    })
+    @ApiQuery({
+        name: 'postId',
+        description: `The post's ID`,
+        required: true,
+    })
+    @ApiQuery({
+        name: 'page',
+        description: `The page's number to call`,
+        required: true,
+    })
+    @ApiQuery({
+        name: 'limit',
+        description: `The number of items on a single page`,
+        required: true,
+    })
+    @ApiOperation({ summary: `Get reply list of the parent comment` })
+    @Get('/reply')
+    getReplyListByParentCommentId(
+        @Query('parentCommentId', ParseIntPipe) parentCommentId: number,
+        @Query('postId', ParseIntPipe) postId: number,
+        @Query('page', ParseIntPipe) page: number,
+        @Query('limit', ParseIntPipe) limit: number,
+    ): Promise<CommentInfoListDto> {
+        return this.commentService.getReplyListByParentCommentId(parentCommentId, postId, page, limit);
+    }
+
+    @ApiResponse({
         type: CommentInfoDto,
         status: 200,
         description: 'Success',
     })
     @ApiBody({ type: UpdateCommentDto })
-    @ApiOperation({ summary: `Get comments list of the post` })
+    @ApiOperation({ summary: `Update the comment's content` })
     @Patch('/')
     updateComment(
         @Body() updateCommentDto: UpdateCommentDto,

@@ -28,6 +28,10 @@ export class CommentService {
         return await this.commentRepository.getCommentList(postId, page, limit);
     }
 
+    async getReplyListByParentCommentId(parentCommentId: number, postId: number, page: number, limit: number): Promise<CommentInfoListDto> {
+        return await this.commentRepository.getReplyListByParentCommentId(parentCommentId, postId, page, limit);
+    }
+
     async updateComment(updateCommentDto: UpdateCommentDto, user: User): Promise<CommentInfoDto> {
         return await this.commentRepository.updateComment(updateCommentDto, user);
     }
