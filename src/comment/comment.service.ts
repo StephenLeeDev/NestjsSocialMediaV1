@@ -7,6 +7,7 @@ import { User } from "src/user/user.entity";
 import { CommentInfoDto, CommentInfoListDto } from "./dto/comment-info.dto";
 import { UpdateCommentDto } from "./dto/update-comment.dto";
 import { PostEntity } from "src/post/post.entity";
+import { UserRepository } from "src/user/user.repository";
 
 @Injectable()
 export class CommentService {
@@ -15,6 +16,8 @@ export class CommentService {
         private postRepository: PostRepository,
         @InjectRepository(CommentRepository)
         private commentRepository: CommentRepository,
+        @InjectRepository(UserRepository)
+        private userRepository: UserRepository,
     ) { }
 
     private logger = new Logger('PostService');
@@ -60,6 +63,43 @@ export class CommentService {
 
         this.logger.verbose(`post : ${post}`);
         return post;
+    }
+
+    // Create dummy comments or relies
+    // A Comment represents a comment on a post, while a Reply represents a comment on a Comment.
+    async createDummyComments(
+        count: number,
+        createCommentDto: CreateCommentDto,
+    ): Promise<void> {
+
+        const users = await this.userRepository.find({ take: 5 });
+        
+        const post = await this.postRepository.findOne(createCommentDto.postId);
+
+        const words = ['Lorem', 'ipsum', 'dolor', 'sit', 'amet', 'consectetur', 'adipiscing', 'elit', 'sed', 'do', 'eiusmod', 'tempor', 'incididunt', 'ut', 'labore', 'et', 'dolore', 'magna', 'aliqua'];
+        function generateRandomSentence(): string {
+            const sentenceLength = Math.floor(Math.random() * 10) + 3;
+          
+            let sentence = '';
+          
+            for (let i = 0; i < sentenceLength; i++) {
+                const randomIndex = Math.floor(Math.random() * words.length);
+                const word = words[randomIndex];
+                sentence += word + ' ';
+            }
+          
+            sentence = sentence.trim();
+            sentence += '.';
+          
+            return sentence;
+        }
+
+        users.map((user: User) => {
+            createCommentDto.content = generateRandomSentence();
+
+            this.commentRepository.createComment(createCommentDto, user, post);
+        })
+
     }
 
 }

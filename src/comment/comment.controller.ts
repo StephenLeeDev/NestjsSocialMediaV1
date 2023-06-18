@@ -7,6 +7,7 @@ import { GetUser } from "src/auth/get-user.decorator";
 import { User } from "src/user/user.entity";
 import { CommentService } from "./comment.service";
 import { UpdateCommentDto } from "./dto/update-comment.dto";
+import { CreateDummyCommentDto } from "./dto/create-dummy-comment.dto";
 
 @ApiTags('COMMENT')
 @UseGuards(AuthGuard())
@@ -26,7 +27,7 @@ export class CommentController {
         description: 'Success',
     })
     @ApiBody({ type: CreateCommentDto })
-    @ApiOperation({ summary: `Create a comment` })
+    @ApiOperation({ summary: `Create comments or relies. A Comment represents a comment on a post, while a Reply represents a comment on a Comment.` })
     @Post('/')
     createComment(
         @Body() commentInfoDto: CommentInfoDto,
@@ -132,6 +133,25 @@ export class CommentController {
         @GetUser() user: User,
     ): Promise<void> {
         return this.commentService.deleteComment(id, user);
+    }
+
+    @ApiResponse({
+        status: 201,
+        description: 'Success',
+    })
+    @ApiBody({ type: CreateDummyCommentDto })
+    @ApiOperation({ summary: `Create 5 dummy comments or replies` })
+    @Post('/test/dummy')
+    createDummyComments(
+        @Body() createDummyCommentDto: CreateDummyCommentDto,
+    ): Promise<void> {
+        const count = 5;
+
+        var commentInfoDto = new CommentInfoDto;
+        commentInfoDto.postId = createDummyCommentDto.postId;
+        commentInfoDto.parentCommentId = createDummyCommentDto.parentCommentId;
+        commentInfoDto.parentCommentAuthor = createDummyCommentDto.parentCommentAuthor;
+        return this.commentService.createDummyComments(count, commentInfoDto);
     }
 
 }

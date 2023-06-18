@@ -15,7 +15,6 @@ export class CommentInfoDto {
       example: 'Lorem ipsum',
       description: `The comment's content`,
     })
-    @IsNotEmpty()
     content: string;
     
     @ApiProperty({
@@ -43,9 +42,13 @@ export class CommentInfoDto {
     @IsNotEmpty()
     postId: number;
       
-    @ApiProperty({ type: [UserSimpleInfoDto] })
-    user: UserSimpleInfoDto
-        
+    @ApiProperty({
+        example: `john@gmail.com`,
+        description: `The email of its author.`,
+    })
+    @IsNotEmpty()
+    user: UserSimpleInfoDto;
+    
     @ApiProperty({
         example: `2022-06-12 06:00:22.206Z`,
         description: `The created date the comment.`,

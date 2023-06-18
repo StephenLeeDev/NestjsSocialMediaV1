@@ -49,13 +49,34 @@ export class PostService {
     }
 
     async getPostById(id: number): Promise<PostInfoDto> {
-        const post = await this.postRepository.findOne(id, { relations: ['user'] });
-
+        const post = await this.postRepository
+            .createQueryBuilder('post')
+            .leftJoinAndSelect('post.user', 'user')
+            .leftJoin('post.comments', 'comment_entity')
+            .loadRelationCountAndMap('post.commentCount', 'post.comments')
+            .where('post.id = :id', { id })
+            .select([
+                'post.id',
+                'post.description',
+                'post.status',
+                'post.createdAt',
+                'post.imageUrls',
+                'post.likes',
+                'post.bookMarkedUsers',
+                'user.username',
+                'user.email',
+                'user.thumbnail',
+                'COUNT(comment_entity.id) as commentCount',
+            ])
+            .groupBy('post.id')
+            .addGroupBy('user.email')
+            .getOne();
+      
         if (!post) {
             this.logger.error(`Can't find Post with id ${id}`);
             throw new NotFoundException(`Can't find Post with id ${id}`);
         }
-
+      
         const postInfo: PostInfoDto = new PostInfoDto();
         postInfo.id = post.id;
         postInfo.description = post.description;
@@ -70,10 +91,10 @@ export class PostService {
         postInfo.likes = post.likes;
         postInfo.bookMarkedUsers = post.bookMarkedUsers;
         postInfo.commentCount = post.commentCount;
-
+      
         this.logger.verbose(`post : ${postInfo}`);
         return postInfo;
-    }
+      }
 
     async deletePost(
         id: number,
