@@ -7,13 +7,15 @@ import { ChatGateway } from './chat/gateway/chat.gateway';
 import { ChatController } from './chat/chat.controller';
 import { UserModule } from './user/user.module';
 import { ConfigModule } from '@nestjs/config';
+import { CommentModule } from './comment/comment.module';
 
 @Module({
   imports: [
     TypeOrmModule.forRoot(typeORMConfig),
-    PostModule,
     AuthModule,
     UserModule,
+    PostModule,
+    CommentModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),

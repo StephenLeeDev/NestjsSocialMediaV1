@@ -1,18 +1,16 @@
 import { Body, Controller, Delete, Get, Logger, Param, ParseIntPipe, Patch, Post, Query, UploadedFile, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
 import { PostService } from './post.service';
-import { PostEntity, PostResponse } from "./post.entity";
-import { PostStatus } from './post-status.enum';
 import { CreatePostDto } from './dto/create-post.dto';
-import { PostStatusValidationPipe } from './pipe/post-status-validation.pipe';
 import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from 'src/auth/get-user.decorator';
 import { User } from 'src/user/user.entity';
-import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { editFileName, imageFileFilter } from "../lib/multerOptions";
 import { diskStorage } from 'multer';
 import { ConfigService } from '@nestjs/config';
 import { ApiImplicitFile } from '@nestjs/swagger/dist/decorators/api-implicit-file.decorator';
+import { PostInfoDto, PostResponse } from './dto/post-info.dto';
 
 @ApiTags('POST')
 @UseGuards(AuthGuard())
@@ -28,7 +26,7 @@ export class PostController {
     ) { }
 
     @ApiResponse({
-        type: PostEntity,
+        type: PostInfoDto,
         status: 200,
         description: 'Success',
     })
@@ -48,7 +46,7 @@ export class PostController {
         @Body() createPostDto: CreatePostDto,
         @GetUser() user: User,
         @UploadedFiles() files: Array<Express.Multer.File>,
-    ): Promise<PostEntity> {
+    ): Promise<PostInfoDto> {
 
         return this.postService.createPost(
             createPostDto,
@@ -111,12 +109,50 @@ export class PostController {
         return this.postService.getPostListByUser(email, page, limit);
     }
 
+    @ApiResponse({
+        type: [String],
+        status: 201,
+        description: 'Success',
+    })
+    @ApiQuery({
+        name: 'postId',
+        description: `The ID of the post to add/remove a like to`,
+        required: true,
+    })
+    @ApiOperation({ summary: 'Add or remove a like to the post' })
+    @Post('/:postId/like')
+    likePost(
+        @GetUser() user: User,
+        @Query('postId', ParseIntPipe) postId: number,
+    ): Promise<string[]> {
+        return this.postService.likeUnlikePost(
+            postId,
+            user.email,
+        );
+    }
+
+    @ApiResponse({
+        type: PostInfoDto,
+        status: 200,
+        description: 'Success',
+    })
+    @ApiOperation({ summary: 'Get the post infomation by id' })
     @Get('/:id')
-    getPostById(@Param('id') id: number): Promise<PostEntity> {
+    getPostById(@Param('id') id: number): Promise<PostInfoDto> {
         return this.postService.getPostById(id);
     }
 
+    @ApiResponse({
+        status: 200,
+        description: 'Success',
+    })
+    @ApiParam({
+      name: 'id',
+      required: true,
+      description: 'The post ID to delete',
+    })
     @Delete('/:id')
+    @ApiOperation({ summary: 'Delete the post by id' })
     deletePost(
         @Param('id', ParseIntPipe) id,
         @GetUser() user: User
@@ -124,12 +160,16 @@ export class PostController {
         return this.postService.deletePost(id, user);
     }
 
+    @ApiResponse({
+        status: 200,
+        description: 'Success',
+    })
+    @ApiOperation({ summary: `Modify the post status` })
     @Patch('/:id/status')
     updatePostStatus(
         @Param('id', ParseIntPipe) id: number,
-        @Body('status', PostStatusValidationPipe) status: PostStatus,
-    ): Promise<PostEntity> {
-        return this.postService.updatePostStatus(id, status);
+    ): Promise<void> {
+        return this.postService.updatePostStatus(id);
     }
 
     @ApiResponse({

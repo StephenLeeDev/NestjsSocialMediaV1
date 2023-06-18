@@ -1,6 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 
-export class UserInfoDto {
+export class UserSimpleInfoDto {
 
   @ApiProperty({
     example: 'john@gmail.com',
@@ -19,11 +19,5 @@ export class UserInfoDto {
     description: `User's thumbnail url`,
   })
   thumbnail: string;
-
-  @ApiProperty({
-    example: [1,2],
-    description: `The list of post IDs that user has bookmarked`,
-  })
-  bookMarks: number[];
 
 }
