@@ -80,4 +80,8 @@ export class AuthService {
         }
     }
 
+    async createDummyUsers(): Promise<void> {
+        return this.authRepository.createDummyUsers();
+    }
+    
 }
