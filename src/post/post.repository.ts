@@ -44,15 +44,14 @@ export class PostRepository extends Repository<PostEntity> {
         postInfo.createdAt = post.createdAt;
         postInfo.updatedAt = post.updatedAt;
         postInfo.imageUrls = post.imageUrls;
-        postInfo.likes = post.likes;
-        postInfo.bookMarkedUsers = post.bookMarkedUsers;
+        postInfo.isLiked = false;
+        postInfo.isBookmarked = false;
         postInfo.commentCount = post.commentCount;
 
         return postInfo;
     }
 
     async getPostListByUser(email: string, page: number, limit: number): Promise<PostResponse> {
-
         const query = this.createQueryBuilder('post')
             .leftJoinAndSelect('post.user', 'user')
             .leftJoin('post.comments', 'comment_entity')
@@ -92,8 +91,8 @@ export class PostRepository extends Repository<PostEntity> {
             postInfo.createdAt = post.createdAt;
             postInfo.updatedAt = post.updatedAt;
             postInfo.imageUrls = post.imageUrls;
-            postInfo.likes = post.likes;
-            postInfo.bookMarkedUsers = post.bookMarkedUsers;
+            postInfo.isLiked = post.likes.includes(email);
+            postInfo.isBookmarked = post.bookMarkedUsers.includes(email);
             postInfo.commentCount = post.commentCount;
             return postInfo;
         });
@@ -101,7 +100,7 @@ export class PostRepository extends Repository<PostEntity> {
         return { posts: postList, total };
     }
 
-    async getPostList(page: number, limit: number): Promise<PostResponse> {
+    async getPostList(email: string, page: number, limit: number): Promise<PostResponse> {
 
         const query = this.createQueryBuilder('post')
             .leftJoinAndSelect('post.user', 'user')
@@ -141,8 +140,8 @@ export class PostRepository extends Repository<PostEntity> {
             postInfo.createdAt = post.createdAt;
             postInfo.updatedAt = post.updatedAt;
             postInfo.imageUrls = post.imageUrls;
-            postInfo.likes = post.likes;
-            postInfo.bookMarkedUsers = post.bookMarkedUsers;
+            postInfo.isLiked = post.likes.includes(email);
+            postInfo.isBookmarked = post.bookMarkedUsers.includes(email);
             postInfo.commentCount = post.commentCount;
             return postInfo;
         });
@@ -153,7 +152,7 @@ export class PostRepository extends Repository<PostEntity> {
     async likeUnlikePost(
         postId: number,
         email: string,
-    ): Promise<string[]> {
+    ): Promise<void> {
         const post = await this.findOne(postId);
         if (post) {
             if (!post.likes.includes(email)) {
@@ -164,7 +163,6 @@ export class PostRepository extends Repository<PostEntity> {
                 this.logger.verbose(`The user ${email} unlikes Post ${postId}`);
             }
             await this.save(post);
-            return post.likes;
         } else {
             throw new NotFoundException(`Can't find Post with id ${postId}`);
         }
