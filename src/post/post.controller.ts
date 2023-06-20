@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Logger, Param, ParseIntPipe, Patch, Post, Query, UploadedFile, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Logger, Param, ParseIntPipe, Patch, Post, Query, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
 import { PostService } from './post.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { AuthGuard } from '@nestjs/passport';
@@ -73,10 +73,36 @@ export class PostController {
     @ApiOperation({ summary: `Get post list` })
     @Get('/')
     getPostList(
+        @GetUser() user: User,
         @Query('page', ParseIntPipe) page: number,
         @Query('limit', ParseIntPipe) limit: number,
     ): Promise<PostResponse> {
-        return this.postService.getPostList(page, limit);
+        return this.postService.getPostList(user.email, page, limit);
+    }
+
+    @ApiResponse({
+        type: PostResponse,
+        status: 200,
+        description: 'Success',
+    })
+    @ApiQuery({
+        name: 'page',
+        description: `The page's number to call`,
+        required: true,
+    })
+    @ApiQuery({
+        name: 'limit',
+        description: `The number of items on a single page`,
+        required: true,
+    })
+    @ApiOperation({ summary: `Get user's post list` })
+    @Get('/my')
+    getMyPostList(
+        @GetUser() user: User,
+        @Query('page', ParseIntPipe) page: number,
+        @Query('limit', ParseIntPipe) limit: number,
+    ): Promise<PostResponse> {
+        return this.postService.getPostListByUser(user.email, page, limit);
     }
 
     @ApiResponse({
@@ -100,7 +126,7 @@ export class PostController {
         required: true,
     })
     @ApiOperation({ summary: `Get user's post list` })
-    @Get('/user/post')
+    @Get('/user')
     getPostListByUser(
         @Query('email') email: string,
         @Query('page', ParseIntPipe) page: number,
@@ -110,7 +136,6 @@ export class PostController {
     }
 
     @ApiResponse({
-        type: [String],
         status: 201,
         description: 'Success',
     })
@@ -124,7 +149,7 @@ export class PostController {
     likePost(
         @GetUser() user: User,
         @Query('postId', ParseIntPipe) postId: number,
-    ): Promise<string[]> {
+    ): Promise<void> {
         return this.postService.likeUnlikePost(
             postId,
             user.email,
@@ -138,8 +163,11 @@ export class PostController {
     })
     @ApiOperation({ summary: 'Get the post infomation by id' })
     @Get('/:id')
-    getPostById(@Param('id') id: number): Promise<PostInfoDto> {
-        return this.postService.getPostById(id);
+    getPostById(
+        @GetUser() user: User,
+        @Param('id') id: number
+    ): Promise<PostInfoDto> {
+        return this.postService.getPostById(user.email, id);
     }
 
     @ApiResponse({
@@ -167,9 +195,10 @@ export class PostController {
     @ApiOperation({ summary: `Modify the post status` })
     @Patch('/:id/status')
     updatePostStatus(
+        @GetUser() user: User,
         @Param('id', ParseIntPipe) id: number,
     ): Promise<void> {
-        return this.postService.updatePostStatus(id);
+        return this.postService.updatePostStatus(user.email, id);
     }
 
     @ApiResponse({
@@ -178,12 +207,8 @@ export class PostController {
     })
     @ApiOperation({ summary: 'Create 10 dummy posts' })
     @Post('/test/dummy')
-    createDummyPosts(
-        @GetUser() user: User,
-    ): Promise<void> {
-        const count = 10
-        this.logger.verbose(`User ${user.email} creating ${count} dummy posts.`);
-        return this.postService.createDummyPosts(count, user);
+    createDummyPosts(): Promise<void> {
+        return this.postService.createDummyPosts();
     }
 
 }
