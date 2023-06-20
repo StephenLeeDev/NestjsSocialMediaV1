@@ -145,13 +145,11 @@ export class CommentController {
     createDummyComments(
         @Body() createDummyCommentDto: CreateDummyCommentDto,
     ): Promise<void> {
-        const count = 5;
-
         var commentInfoDto = new CommentInfoDto;
         commentInfoDto.postId = createDummyCommentDto.postId;
         commentInfoDto.parentCommentId = createDummyCommentDto.parentCommentId;
         commentInfoDto.parentCommentAuthor = createDummyCommentDto.parentCommentAuthor;
-        return this.commentService.createDummyComments(count, commentInfoDto);
+        return this.commentService.createDummyComments(commentInfoDto);
     }
 
 }

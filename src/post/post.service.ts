@@ -6,12 +6,18 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/user/user.entity';
 import { PostInfoDto, PostResponse } from './dto/post-info.dto';
 import { UserInfoDto } from 'src/user/dto/user-info.dto';
+import { AuthRepository } from 'src/auth/auth.repository';
+import { UserRepository } from 'src/user/user.repository';
 
 @Injectable()
 export class PostService {
     constructor(
         @InjectRepository(PostRepository)
         private postRepository: PostRepository,
+        @InjectRepository(UserRepository)
+        private userRepository: UserRepository,
+        @InjectRepository(AuthRepository)
+        private authRepository: AuthRepository,
     ) { }
 
     private logger = new Logger('PostService');
@@ -21,11 +27,12 @@ export class PostService {
     }
 
     async getPostList(
+        email: string,
         page: number,
         limit: number,
     ): Promise<PostResponse> {
 
-        const postListResponse = await this.postRepository.getPostList(page, limit);
+        const postListResponse = await this.postRepository.getPostList(email, page, limit);
 
         return postListResponse;
     }
@@ -35,7 +42,6 @@ export class PostService {
         page: number,
         limit: number,
     ): Promise<PostResponse> {
-
         const postListResponse = await this.postRepository.getPostListByUser(email, page, limit);
 
         return postListResponse;
@@ -44,11 +50,11 @@ export class PostService {
     async likeUnlikePost(
         postId: number,
         email: string,
-    ): Promise<string[]> {
+    ): Promise<void> {
         return await this.postRepository.likeUnlikePost(postId, email);
     }
 
-    async getPostById(id: number): Promise<PostInfoDto> {
+    async getPostById(email: string, id: number): Promise<PostInfoDto> {
         const post = await this.postRepository
             .createQueryBuilder('post')
             .leftJoinAndSelect('post.user', 'user')
@@ -88,8 +94,8 @@ export class PostService {
         postInfo.createdAt = post.createdAt;
         postInfo.updatedAt = post.updatedAt;
         postInfo.imageUrls = post.imageUrls;
-        postInfo.likes = post.likes;
-        postInfo.bookMarkedUsers = post.bookMarkedUsers;
+        postInfo.isLiked = post.likes.includes(email);
+        postInfo.isBookmarked = post.bookMarkedUsers.includes(email);
         postInfo.commentCount = post.commentCount;
       
         this.logger.verbose(`post : ${postInfo}`);
@@ -110,8 +116,8 @@ export class PostService {
         this.logger.verbose(`result ${result}`);
     }
 
-    async updatePostStatus(id: number): Promise<void> {
-        const post = await this.getPostById(id);
+    async updatePostStatus(email: string, id: number): Promise<void> {
+        const post = await this.getPostById(email, id);
 
         if (!post) {
             this.logger.error(`Can't find Post with id ${id}`);
@@ -122,8 +128,20 @@ export class PostService {
         await this.postRepository.save(post);
     }
 
-    async createDummyPosts(count: number, user: User): Promise<void> {
+    async createDummyPosts(): Promise<void> {
 
+        const count = 10;
+
+        let users = await this.userRepository.find({ take: count });
+
+        if (users.length < count) {
+            await this.authRepository.createDummyUsers();
+            users = await this.userRepository.find({ take: count });
+        }
+
+        const duplicatedUsers = [...users, ...users.slice(0, count - users.length)];
+        const shuffledUsers = shuffleArray(duplicatedUsers);
+        
         const totalImageCount = 20;
 
         function shuffleArray(array: any[]): any[] {
@@ -180,12 +198,16 @@ export class PostService {
             return sentence;
         }
 
-        for (let i = 0; i < count; i++) {
+        shuffledUsers.map((user: User, index: number) => {
             const post = new CreatePostDto();
             post.description = generateRandomSentence();
-
-            await this.postRepository.createPost(post, user, shuffledImageNumbers[i]);
-        }
+        
+            // Add a slight delay to slow down the dummy data creation speed
+            // to prevent all dummy comments from having the same createdAt value
+            setTimeout(async () => {
+                await this.postRepository.createPost(post, user, shuffledImageNumbers[index]);
+            }, index * 1);
+        })
     }
 
 }
