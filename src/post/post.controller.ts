@@ -11,6 +11,7 @@ import { diskStorage } from 'multer';
 import { ConfigService } from '@nestjs/config';
 import { ApiImplicitFile } from '@nestjs/swagger/dist/decorators/api-implicit-file.decorator';
 import { PostInfoDto, PostResponse } from './dto/post-info.dto';
+import { PostLikeCountDto } from './dto/post-like-count.dto';
 
 @ApiTags('POST')
 @UseGuards(AuthGuard())
@@ -136,6 +137,7 @@ export class PostController {
     }
 
     @ApiResponse({
+        type: PostLikeCountDto,
         status: 201,
         description: 'Success',
     })
@@ -149,7 +151,7 @@ export class PostController {
     likePost(
         @GetUser() user: User,
         @Query('postId', ParseIntPipe) postId: number,
-    ): Promise<void> {
+    ): Promise<PostLikeCountDto> {
         return this.postService.likeUnlikePost(
             postId,
             user.email,

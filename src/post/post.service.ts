@@ -8,6 +8,7 @@ import { PostInfoDto, PostResponse } from './dto/post-info.dto';
 import { UserInfoDto } from 'src/user/dto/user-info.dto';
 import { AuthRepository } from 'src/auth/auth.repository';
 import { UserRepository } from 'src/user/user.repository';
+import { PostLikeCountDto } from './dto/post-like-count.dto';
 
 @Injectable()
 export class PostService {
@@ -50,7 +51,7 @@ export class PostService {
     async likeUnlikePost(
         postId: number,
         email: string,
-    ): Promise<void> {
+    ): Promise<PostLikeCountDto> {
         return await this.postRepository.likeUnlikePost(postId, email);
     }
 
@@ -94,6 +95,7 @@ export class PostService {
         postInfo.createdAt = post.createdAt;
         postInfo.updatedAt = post.updatedAt;
         postInfo.imageUrls = post.imageUrls;
+        postInfo.likeCount = post.likes.length;
         postInfo.isLiked = post.likes.includes(email);
         postInfo.isBookmarked = post.bookMarkedUsers.includes(email);
         postInfo.commentCount = post.commentCount;

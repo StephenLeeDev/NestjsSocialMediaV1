@@ -7,6 +7,7 @@ import * as moment from 'moment-timezone';
 import { Logger, NotFoundException } from "@nestjs/common";
 import { PostInfoDto, PostResponse } from "./dto/post-info.dto";
 import { UserInfoDto } from "src/user/dto/user-info.dto";
+import { PostLikeCountDto } from "./dto/post-like-count.dto";
 
 @EntityRepository(PostEntity)
 export class PostRepository extends Repository<PostEntity> {
@@ -91,6 +92,7 @@ export class PostRepository extends Repository<PostEntity> {
             postInfo.createdAt = post.createdAt;
             postInfo.updatedAt = post.updatedAt;
             postInfo.imageUrls = post.imageUrls;
+            postInfo.likeCount = post.likes.length;
             postInfo.isLiked = post.likes.includes(email);
             postInfo.isBookmarked = post.bookMarkedUsers.includes(email);
             postInfo.commentCount = post.commentCount;
@@ -140,6 +142,7 @@ export class PostRepository extends Repository<PostEntity> {
             postInfo.createdAt = post.createdAt;
             postInfo.updatedAt = post.updatedAt;
             postInfo.imageUrls = post.imageUrls;
+            postInfo.likeCount = post.likes.length;
             postInfo.isLiked = post.likes.includes(email);
             postInfo.isBookmarked = post.bookMarkedUsers.includes(email);
             postInfo.commentCount = post.commentCount;
@@ -152,7 +155,7 @@ export class PostRepository extends Repository<PostEntity> {
     async likeUnlikePost(
         postId: number,
         email: string,
-    ): Promise<void> {
+    ): Promise<PostLikeCountDto> {
         const post = await this.findOne(postId);
         if (post) {
             if (!post.likes.includes(email)) {
@@ -163,6 +166,9 @@ export class PostRepository extends Repository<PostEntity> {
                 this.logger.verbose(`The user ${email} unlikes Post ${postId}`);
             }
             await this.save(post);
+            const postLikeCountDto = new PostLikeCountDto;
+            postLikeCountDto.likeCount = post.likes.length;
+            return postLikeCountDto;
         } else {
             throw new NotFoundException(`Can't find Post with id ${postId}`);
         }

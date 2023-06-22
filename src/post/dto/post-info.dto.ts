@@ -44,6 +44,12 @@ export class PostInfoDto {
     user: UserSimpleInfoDto
         
     @ApiProperty({
+        example: 3,
+        description: `The total like count of the post.`,
+    })
+    likeCount: number;
+          
+    @ApiProperty({
         example: true,
         description: `Indicates whether the post is liked by the user.`,
     })
