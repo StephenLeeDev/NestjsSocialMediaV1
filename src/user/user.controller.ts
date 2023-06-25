@@ -5,7 +5,6 @@ import { AuthGuard } from '@nestjs/passport';
 import { UserInfoDto } from './dto/user-info.dto';
 import { GetUser } from 'src/auth/get-user.decorator';
 import { User } from './user.entity';
-import { bookMarksDTO } from './dto/book-marks.dto';
 
 @ApiTags('USER')
 @UseGuards(AuthGuard())
@@ -40,8 +39,7 @@ export class UserController {
     }
 
     @ApiResponse({
-        type: bookMarksDTO,
-        status: 200,
+        status: 201,
         description: 'Success',
     })
     @ApiQuery({
@@ -54,7 +52,7 @@ export class UserController {
     postBookMark(
         @GetUser() user: User,
         @Query('postId', ParseIntPipe) postId: number,
-    ): Promise<bookMarksDTO> {
+    ): Promise<void> {
         return this.userService.postBookMark(user.email, postId);
     }
 

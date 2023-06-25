@@ -7,10 +7,17 @@ import { CommentRepository } from 'src/comment/comment.repository';
 import { CommentEntity } from 'src/comment/comment.entity';
 import { PostRepository } from 'src/post/post.repository';
 import { UserRepository } from 'src/user/user.repository';
+import { AuthRepository } from 'src/auth/auth.repository';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([PostRepository, CommentRepository, UserRepository, CommentEntity]),
+    TypeOrmModule.forFeature([
+      PostRepository,
+      CommentRepository,
+      UserRepository,
+      CommentEntity,
+      AuthRepository
+    ]),
     AuthModule,
   ],
   controllers: [CommentController],

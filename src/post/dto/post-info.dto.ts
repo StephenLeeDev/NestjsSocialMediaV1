@@ -44,16 +44,22 @@ export class PostInfoDto {
     user: UserSimpleInfoDto
         
     @ApiProperty({
-        example: ['john@gmail.com'],
-        description: `The list of email who liked the post.`,
+        example: 3,
+        description: `The total like count of the post.`,
     })
-    likes: string[];
+    likeCount: number;
           
     @ApiProperty({
-        example: ['john@gmail.com'],
-        description: `The list of email who bookmarked the post.`,
+        example: true,
+        description: `Indicates whether the post is liked by the user.`,
     })
-    bookMarkedUsers: string[];
+    isLiked: boolean;
+          
+    @ApiProperty({
+        example: false,
+        description: `Indicates whether the post is bookmarked by the user.`,
+    })
+    isBookmarked: boolean;
           
     @ApiProperty({
         example: 5,
