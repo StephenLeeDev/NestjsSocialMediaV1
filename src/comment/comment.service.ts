@@ -8,6 +8,7 @@ import { CommentInfoDto, CommentInfoListDto } from "./dto/comment-info.dto";
 import { UpdateCommentDto } from "./dto/update-comment.dto";
 import { PostEntity } from "src/post/post.entity";
 import { UserRepository } from "src/user/user.repository";
+import { AuthRepository } from "src/auth/auth.repository";
 
 @Injectable()
 export class CommentService {
@@ -18,6 +19,8 @@ export class CommentService {
         private commentRepository: CommentRepository,
         @InjectRepository(UserRepository)
         private userRepository: UserRepository,
+        @InjectRepository(AuthRepository)
+        private authRepository: AuthRepository,
     ) { }
 
     private logger = new Logger('PostService');
@@ -67,39 +70,54 @@ export class CommentService {
 
     // Create dummy comments or relies
     // A Comment represents a comment on a post, while a Reply represents a comment on a Comment.
-    async createDummyComments(
-        count: number,
-        createCommentDto: CreateCommentDto,
-    ): Promise<void> {
-
-        const users = await this.userRepository.find({ take: 5 });
-        
+    async createDummyComments(createCommentDto: CreateCommentDto): Promise<void> {
+        const count = 5;
+        let users = await this.userRepository.find({ take: count });
+    
+        if (users.length < count) {
+            await this.authRepository.createDummyUsers();
+            users = await this.userRepository.find({ take: count });
+        }
+    
         const post = await this.postRepository.findOne(createCommentDto.postId);
-
+    
         const words = ['Lorem', 'ipsum', 'dolor', 'sit', 'amet', 'consectetur', 'adipiscing', 'elit', 'sed', 'do', 'eiusmod', 'tempor', 'incididunt', 'ut', 'labore', 'et', 'dolore', 'magna', 'aliqua'];
+    
+        const randomSentences: string[] = [];
+        for (let i = 0; i < count; i++) {
+            randomSentences.push(generateRandomSentence());
+        }
+    
+        users.forEach((user: User, index: number) => {
+            const commentDto = new CreateCommentDto(); // Create a new commentDto object for each comment
+            commentDto.content = randomSentences[index];
+            commentDto.postId = createCommentDto.postId;
+            commentDto.parentCommentId = createCommentDto.parentCommentId;
+            commentDto.parentCommentAuthor = createCommentDto.parentCommentAuthor;
+    
+            // Add a slight delay to slow down the dummy data creation speed
+            // to prevent all dummy comments from having the same createdAt value
+            setTimeout(() => {
+                this.commentRepository.createComment(commentDto, user, post);
+            }, index * 1);
+        });
+    
         function generateRandomSentence(): string {
             const sentenceLength = Math.floor(Math.random() * 10) + 3;
-          
+    
             let sentence = '';
-          
+    
             for (let i = 0; i < sentenceLength; i++) {
                 const randomIndex = Math.floor(Math.random() * words.length);
                 const word = words[randomIndex];
                 sentence += word + ' ';
             }
-          
+    
             sentence = sentence.trim();
             sentence += '.';
-          
+    
             return sentence;
         }
-
-        users.map((user: User) => {
-            createCommentDto.content = generateRandomSentence();
-
-            this.commentRepository.createComment(createCommentDto, user, post);
-        })
-
     }
 
 }

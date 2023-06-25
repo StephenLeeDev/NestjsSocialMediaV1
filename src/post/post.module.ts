@@ -7,10 +7,12 @@ import { PostService } from './post.service';
 import { MulterModule } from '@nestjs/platform-express';
 import { CommentRepository } from 'src/comment/comment.repository';
 import { CommentEntity } from 'src/comment/comment.entity';
+import { AuthRepository } from 'src/auth/auth.repository';
+import { UserRepository } from 'src/user/user.repository';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([PostRepository, CommentRepository, CommentEntity]),
+    TypeOrmModule.forFeature([PostRepository, CommentRepository, CommentEntity, UserRepository, AuthRepository]),
     AuthModule,
     MulterModule.register({
       dest: "./static/images",

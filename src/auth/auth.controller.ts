@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Post, ValidationPipe } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthCredentialsDto } from './dto/auth-credential.dto';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -23,7 +23,7 @@ export class AuthController {
 
     @ApiResponse({
         type: String,
-        status: 200,
+        status: 201,
         description: 'Success',
     })
     @ApiOperation({ summary: 'Sign in' })
@@ -34,11 +34,6 @@ export class AuthController {
 
     @ApiResponse({
         type: String,
-        status: 200,
-        description: 'Success',
-    })
-    @ApiResponse({
-        type: String,
         status: 201,
         description: 'Success',
     })
@@ -46,6 +41,16 @@ export class AuthController {
     @Post('/test')
     test(): Promise<{ accessToken: string }> {
         return this.authService.test();
+    }
+
+    @ApiResponse({
+        status: 201,
+        description: 'Success',
+    })
+    @ApiOperation({ summary: `Create 5 dummy users` })
+    @Post('/test/dummy')
+    createDummyUsers(): Promise<void> {
+        return this.authService.createDummyUsers();
     }
 
 }

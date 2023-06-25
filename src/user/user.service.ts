@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserRepository } from './user.repository';
 import { UserInfoDto } from './dto/user-info.dto';
-import { bookMarksDTO } from './dto/book-marks.dto';
 import { PostRepository } from 'src/post/post.repository';
 
 @Injectable()
@@ -19,12 +18,11 @@ export class UserService {
         return userInfo;
     }
     
-    async postBookMark(email: string, postId: number): Promise<bookMarksDTO> {
+    async postBookMark(email: string, postId: number): Promise<void> {
         const bookMarks = await this.userRepository.postBookMark(email, postId);
         if (bookMarks) {
             await this.postRepository.postBookMark(email, postId);
         }
-        return bookMarks;
     }
     
 }
