@@ -96,7 +96,7 @@ export class PostController {
         description: `The number of items on a single page`,
         required: true,
     })
-    @ApiOperation({ summary: `Get user's post list` })
+    @ApiOperation({ summary: `Get my post list` })
     @Get('/my')
     getMyPostList(
         @GetUser() user: User,
@@ -126,7 +126,7 @@ export class PostController {
         description: `The number of items on a single page`,
         required: true,
     })
-    @ApiOperation({ summary: `Get user's post list` })
+    @ApiOperation({ summary: `Get user's post list by email` })
     @Get('/user')
     getPostListByUser(
         @Query('email') email: string,
@@ -207,7 +207,7 @@ export class PostController {
         status: 201,
         description: 'Success',
     })
-    @ApiOperation({ summary: 'Create 10 dummy posts' })
+    @ApiOperation({ summary: 'Create 5 dummy posts' })
     @Post('/test/dummy')
     createDummyPosts(): Promise<void> {
         return this.postService.createDummyPosts();
