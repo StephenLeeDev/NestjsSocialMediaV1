@@ -4,10 +4,11 @@ import { PostStatus } from "./post-status.enum";
 import { PostEntity } from "./post.entity";
 import { CreatePostDto } from "./dto/create-post.dto";
 import * as moment from 'moment-timezone';
-import { Logger, NotFoundException } from "@nestjs/common";
+import { Logger, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { PostInfoDto, PostResponse } from "./dto/post-info.dto";
 import { UserInfoDto } from "src/user/dto/user-info.dto";
 import { PostLikeCountDto } from "./dto/post-like-count.dto";
+import { UpdatePostDescriptionDto } from "./dto/update-post-description.dto";
 
 @EntityRepository(PostEntity)
 export class PostRepository extends Repository<PostEntity> {
@@ -150,6 +151,65 @@ export class PostRepository extends Repository<PostEntity> {
         });
 
         return { posts: postList, total };
+    }
+
+    async updatePostDescription(
+        email: string,
+        updatePostDescriptionDto: UpdatePostDescriptionDto,
+    ): Promise<PostInfoDto> {
+        const post = await this
+            .createQueryBuilder('post')
+            .leftJoinAndSelect('post.user', 'user')
+            .leftJoin('post.comments', 'comment_entity')
+            .loadRelationCountAndMap('post.commentCount', 'post.comments')
+            .where('post.id = :id', { id: updatePostDescriptionDto.postId })
+            .select([
+                'post.id',
+                'post.description',
+                'post.status',
+                'post.createdAt',
+                'post.imageUrls',
+                'post.likes',
+                'post.bookMarkedUsers',
+                'user.username',
+                'user.email',
+                'user.thumbnail',
+                'COUNT(comment_entity.id) as commentCount',
+            ])
+            .groupBy('post.id')
+            .addGroupBy('user.email')
+            .getOne();
+        
+        if (post) {
+            /// Does not have the right to update the post
+            if (post.user.email != email) {
+                throw new UnauthorizedException();
+            }
+            /// Update the description
+            post.description = updatePostDescriptionDto.description;
+            await this.save(post);
+
+            /// Return result
+            const postInfo: PostInfoDto = new PostInfoDto();
+            postInfo.id = post.id;
+            postInfo.description = post.description;
+            postInfo.status = post.status;
+            postInfo.user = new UserInfoDto();
+            postInfo.user.email = post.user.email;
+            postInfo.user.username = post.user.username;
+            postInfo.user.thumbnail = post.user.thumbnail;
+            postInfo.createdAt = post.createdAt;
+            postInfo.updatedAt = post.updatedAt;
+            postInfo.imageUrls = post.imageUrls;
+            postInfo.likeCount = post.likes.length;
+            postInfo.isLiked = post.likes.includes(email);
+            postInfo.isBookmarked = post.bookMarkedUsers.includes(email);
+            postInfo.commentCount = post.commentCount;
+            return postInfo;
+
+        } else {
+            throw new NotFoundException(`Can't find Post with id ${updatePostDescriptionDto.postId}`);
+        }
     }
 
     async likeUnlikePost(

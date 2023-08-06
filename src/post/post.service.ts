@@ -9,6 +9,7 @@ import { UserInfoDto } from 'src/user/dto/user-info.dto';
 import { AuthRepository } from 'src/auth/auth.repository';
 import { UserRepository } from 'src/user/user.repository';
 import { PostLikeCountDto } from './dto/post-like-count.dto';
+import { UpdatePostDescriptionDto } from './dto/update-post-description.dto';
 
 @Injectable()
 export class PostService {
@@ -102,7 +103,17 @@ export class PostService {
       
         this.logger.verbose(`post : ${postInfo}`);
         return postInfo;
-      }
+    }
+
+    async updatePostDescription(
+        email: string,
+        updatePostDescriptionDto: UpdatePostDescriptionDto,
+    ): Promise<PostInfoDto> {
+
+        const postInfoDto = await this.postRepository.updatePostDescription(email, updatePostDescriptionDto);
+
+        return postInfoDto;
+    }
 
     async deletePost(
         id: number,
@@ -132,7 +143,7 @@ export class PostService {
 
     async createDummyPosts(): Promise<void> {
 
-        const count = 10;
+        const count = 5;
 
         let users = await this.userRepository.find({ take: count });
 
