@@ -17,7 +17,7 @@ import { UserRepository } from 'src/user/user.repository';
     MulterModule.register({
       dest: "./static/images",
       limits: {
-        fileSize: 300000, // 300kb
+        fileSize: 1000000, // 1000kb
       },
     }),
   ],

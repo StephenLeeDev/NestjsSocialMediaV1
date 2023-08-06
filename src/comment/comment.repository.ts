@@ -83,7 +83,7 @@ export class CommentRepository extends Repository<CommentEntity> {
           commentInfo.user.username = comment.user.username;
           commentInfo.createdAt = comment.createdAt;
           commentInfo.updatedAt = comment.updatedAt;
-          commentInfo.childrenCount = comment.childrenCount; // Modified line
+          commentInfo.childrenCount = comment.childrenCount;
           return commentInfo;
         });
       
@@ -125,9 +125,8 @@ export class CommentRepository extends Repository<CommentEntity> {
     }
 
     async updateComment(updateCommentDto: UpdateCommentDto, user: User): Promise<CommentInfoDto> {
-
         const { id, content } = updateCommentDto;
-        const comment = await this.findOne(id, { relations: ['user', 'post'] });
+        const comment = await this.findOne(id, { relations: ['user', 'post', 'childComments'] });
 
         if (comment) {
             if (comment.user.email != user.email) {
@@ -152,7 +151,7 @@ export class CommentRepository extends Repository<CommentEntity> {
                 updatedComment.user.username = comment.user.username;
                 updatedComment.createdAt = comment.createdAt;
                 updatedComment.updatedAt = comment.updatedAt;
-
+                updatedComment.childrenCount = comment.childComments.length;
                 return updatedComment;
             }
         }
