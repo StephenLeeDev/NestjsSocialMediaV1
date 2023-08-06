@@ -12,6 +12,7 @@ import { ConfigService } from '@nestjs/config';
 import { ApiImplicitFile } from '@nestjs/swagger/dist/decorators/api-implicit-file.decorator';
 import { PostInfoDto, PostResponse } from './dto/post-info.dto';
 import { PostLikeCountDto } from './dto/post-like-count.dto';
+import { UpdatePostDescriptionDto } from './dto/update-post-description.dto';
 
 @ApiTags('POST')
 @UseGuards(AuthGuard())
@@ -35,7 +36,7 @@ export class PostController {
     @ApiImplicitFile({ name: 'files', description: `Post's images`, required: true })
     @ApiBody({ type: CreatePostDto })
     @ApiOperation({ summary: 'Create a new post' })
-    @UseInterceptors(FilesInterceptor("files", 3, {
+    @UseInterceptors(FilesInterceptor("files", 4, {
       storage: diskStorage({
         destination: `./static/images`,
         filename: editFileName
@@ -79,6 +80,19 @@ export class PostController {
         @Query('limit', ParseIntPipe) limit: number,
     ): Promise<PostResponse> {
         return this.postService.getPostList(user.email, page, limit);
+    }
+
+    @ApiResponse({
+        status: 201,
+        description: 'Success',
+    })
+    @ApiOperation({ summary: `Update the post description` })
+    @Patch()
+    updatePostDescription(
+        @GetUser() user: User,
+        @Body() updatePostDescriptionDto: UpdatePostDescriptionDto,
+    ): Promise<PostInfoDto> {
+        return this.postService.updatePostDescription(user.email, updatePostDescriptionDto);
     }
 
     @ApiResponse({
