@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { UserRepository } from './user.repository';
 import { UserInfoDto } from './dto/user-info.dto';
 import { PostRepository } from 'src/post/post.repository';
+import { UpdatedUserThumbnailDto } from './dto/updated-user-thumbnail.dto';
 
 @Injectable()
 export class UserService {
@@ -23,6 +24,10 @@ export class UserService {
         if (bookMarks) {
             await this.postRepository.postBookMark(email, postId);
         }
+    }
+    
+    async updateUserThumbnail(email: string, newThumbnailUrl: string): Promise<UpdatedUserThumbnailDto> {
+        return await this.userRepository.updateUserThumbnail(email, newThumbnailUrl);
     }
     
 }

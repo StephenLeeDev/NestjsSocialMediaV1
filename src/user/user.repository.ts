@@ -3,6 +3,7 @@ import { User } from "./user.entity";
 import { UserInfoDto } from "./dto/user-info.dto";
 import { NotFoundException } from "@nestjs/common";
 import { bookMarksDTO } from "./dto/book-marks.dto";
+import { UpdatedUserThumbnailDto } from "./dto/updated-user-thumbnail.dto";
 
 @EntityRepository(User)
 export class UserRepository extends Repository<User> {
@@ -40,6 +41,22 @@ export class UserRepository extends Repository<User> {
         await this.save(user)
     
         return { bookMarks };
+    }
+    
+    async updateUserThumbnail(email: string, newThumbnailUrl: string): Promise<UpdatedUserThumbnailDto> {
+        const user = await this.findOne({ email });
+    
+        if (!user) {
+          throw new Error('User not found');
+        }
+    
+        user.thumbnail = newThumbnailUrl;
+        await this.save(user)
+
+        const updatedUserThumbnailDto = new UpdatedUserThumbnailDto();
+        updatedUserThumbnailDto.updatedThumbnail = user.thumbnail;
+    
+        return updatedUserThumbnailDto;
     }
     
 }

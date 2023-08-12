@@ -1,10 +1,16 @@
-import { Controller, Get, Logger, ParseIntPipe, Post, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Logger, ParseIntPipe, Patch, Post, Query, UploadedFile, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
 import { UserService } from './user.service';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { UserInfoDto } from './dto/user-info.dto';
 import { GetUser } from 'src/auth/get-user.decorator';
 import { User } from './user.entity';
+import { ApiImplicitFile } from '@nestjs/swagger/dist/decorators/api-implicit-file.decorator';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { editFileName, imageFileFilter } from 'src/lib/multerOptions';
+import { UpdatedUserThumbnailDto } from './dto/updated-user-thumbnail.dto';
+import { ConfigService } from '@nestjs/config';
 
 @ApiTags('USER')
 @UseGuards(AuthGuard())
@@ -14,7 +20,10 @@ export class UserController {
 
     private logger = new Logger('UserController');
 
-    constructor(private userService: UserService) { }
+    constructor(
+        private userService: UserService,
+        private readonly configService: ConfigService
+    ) { }
 
     @ApiResponse({
         type: UserInfoDto,
@@ -54,6 +63,35 @@ export class UserController {
         @Query('postId', ParseIntPipe) postId: number,
     ): Promise<void> {
         return this.userService.postBookMark(user.email, postId);
+    }
+
+    @ApiResponse({
+        type: UpdatedUserThumbnailDto,
+        status: 200,
+        description: 'Success',
+    })
+    @ApiConsumes('multipart/form-data')
+    @ApiImplicitFile({ name: 'file', description: `User thumnail`, required: true })
+    @ApiOperation({ summary: 'Update user thumbnail' })
+    @UseInterceptors(
+        FileInterceptor('file', {
+          storage: diskStorage({
+            destination: './static/images',
+            filename: editFileName,
+          }),
+          fileFilter: imageFileFilter,
+        }),
+      )
+    @Patch('thumbnail')
+    updateUserThumbnail(
+        @GetUser() user: User,
+        @UploadedFile() file: Express.Multer.File,
+    ): Promise<UpdatedUserThumbnailDto> {
+
+        return this.userService.updateUserThumbnail(
+            user.email,
+            `${this.configService.get('SERVER_URL')}/images/${file.filename}`
+        );
     }
 
 }
