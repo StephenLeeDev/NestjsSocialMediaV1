@@ -26,4 +26,10 @@ export class UserInfoDto {
   })
   bookMarks: number[];
 
+  @ApiProperty({
+    example: `I'm hungry`,
+    description: `User's status message`,
+  })
+  statusMessage: string;
+
 }

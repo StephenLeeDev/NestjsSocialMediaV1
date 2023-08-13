@@ -41,7 +41,8 @@ export class UserController {
             email: user.email,
             username: user.username,
             thumbnail: user.thumbnail,
-            bookMarks: user.bookMarks
+            bookMarks: user.bookMarks,
+            statusMessage: user.statusMessage,
         };
 
         return userInfo;
@@ -92,6 +93,25 @@ export class UserController {
             user.email,
             `${this.configService.get('SERVER_URL')}/images/${file.filename}`
         );
+    }
+
+    @ApiResponse({
+        status: 200,
+        description: 'Success',
+    })
+    @ApiQuery({
+        name: 'newStatusMessage',
+        description: `New user's status message`,
+        required: true,
+        allowEmptyValue : true
+    })
+    @ApiOperation({ summary: `Update user's status message` })
+    @Patch('/statusMessage')
+    updateStatusMessage(
+        @GetUser() user: User,
+        @Query('newStatusMessage') newStatusMessage: string,
+    ): Promise<void> {
+        return this.userService.updateStatusMessage(user.email, newStatusMessage);
     }
 
 }

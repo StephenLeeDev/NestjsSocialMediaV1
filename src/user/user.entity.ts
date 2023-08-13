@@ -33,4 +33,7 @@ export class User extends BaseEntity {
     @Column('int', { array: true, nullable: false })
     bookMarks: number[];
 
+    @Column({ default: "" })
+    statusMessage: string;
+
 }

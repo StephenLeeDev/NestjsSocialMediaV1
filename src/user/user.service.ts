@@ -30,4 +30,8 @@ export class UserService {
         return await this.userRepository.updateUserThumbnail(email, newThumbnailUrl);
     }
     
+    async updateStatusMessage(email: string, newStatusMessage: string): Promise<void> {
+        return await this.userRepository.updateStatusMessage(email, newStatusMessage);
+    }
+    
 }

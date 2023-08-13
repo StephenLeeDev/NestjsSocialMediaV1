@@ -13,8 +13,8 @@ export class UserRepository extends Repository<User> {
         const user = await this.findOne({ email });
 
         if (user) {
-            const { email, username, thumbnail, bookMarks } = user;
-            return { email, username, thumbnail, bookMarks };
+            const { email, username, thumbnail, bookMarks, statusMessage } = user;
+            return { email, username, thumbnail, bookMarks, statusMessage };
         } else {
             throw new NotFoundException(`User not found.`);
         }
@@ -59,4 +59,20 @@ export class UserRepository extends Repository<User> {
         return updatedUserThumbnailDto;
     }
     
+    async updateStatusMessage(
+        email: string,
+        newStatusMessage: string,
+    ): Promise<void> {
+        const user = await this.findOne({ email });
+    
+        if (user) {
+            /// Update user status message
+            user.statusMessage = newStatusMessage;
+            await this.save(user);
+
+        } else {
+            throw new NotFoundException(`User not found`);
+        }
+    }
+
 }
