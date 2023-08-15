@@ -87,7 +87,7 @@ export class PostController {
         description: 'Success',
     })
     @ApiOperation({ summary: `Update the post description` })
-    @Patch()
+    @Patch('/description')
     updatePostDescription(
         @GetUser() user: User,
         @Body() updatePostDescriptionDto: UpdatePostDescriptionDto,
