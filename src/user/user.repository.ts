@@ -3,6 +3,7 @@ import { User } from "./user.entity";
 import { UserInfoDto } from "./dto/user-info.dto";
 import { NotFoundException } from "@nestjs/common";
 import { bookMarksDTO } from "./dto/book-marks.dto";
+import { UpdatedUserThumbnailDto } from "./dto/updated-user-thumbnail.dto";
 
 @EntityRepository(User)
 export class UserRepository extends Repository<User> {
@@ -12,8 +13,8 @@ export class UserRepository extends Repository<User> {
         const user = await this.findOne({ email });
 
         if (user) {
-            const { email, username, thumbnail, bookMarks } = user;
-            return { email, username, thumbnail, bookMarks };
+            const { email, username, thumbnail, bookMarks, statusMessage } = user;
+            return { email, username, thumbnail, bookMarks, statusMessage };
         } else {
             throw new NotFoundException(`User not found.`);
         }
@@ -42,4 +43,36 @@ export class UserRepository extends Repository<User> {
         return { bookMarks };
     }
     
+    async updateUserThumbnail(email: string, newThumbnailUrl: string): Promise<UpdatedUserThumbnailDto> {
+        const user = await this.findOne({ email });
+    
+        if (!user) {
+          throw new Error('User not found');
+        }
+    
+        user.thumbnail = newThumbnailUrl;
+        await this.save(user)
+
+        const updatedUserThumbnailDto = new UpdatedUserThumbnailDto();
+        updatedUserThumbnailDto.updatedThumbnail = user.thumbnail;
+    
+        return updatedUserThumbnailDto;
+    }
+    
+    async updateStatusMessage(
+        email: string,
+        newStatusMessage: string,
+    ): Promise<void> {
+        const user = await this.findOne({ email });
+    
+        if (user) {
+            /// Update user status message
+            user.statusMessage = newStatusMessage;
+            await this.save(user);
+
+        } else {
+            throw new NotFoundException(`User not found`);
+        }
+    }
+
 }
