@@ -20,6 +20,8 @@ export class UserInfoDto {
   })
   thumbnail: string;
 
+  // TODO : Low priority
+  // TODO : Refactor this field's type to number from array
   @ApiProperty({
     example: [1,2],
     description: `The list of post IDs that user has bookmarked`,
@@ -31,5 +33,23 @@ export class UserInfoDto {
     description: `User's status message`,
   })
   statusMessage: string;
+
+  @ApiProperty({
+    example: 5,
+    description: `The number of user's feed`,
+  })
+  totalPostCount: number;
+
+  @ApiProperty({
+    example: 5,
+    description: `The number of user's followers`,
+  })
+  followers: number;
+
+  @ApiProperty({
+    example: 7,
+    description: `The number of user's followings`,
+  })
+  followings: number;
 
 }

@@ -34,18 +34,10 @@ export class UserController {
     @Get('/')
     getMyInfo(
         @GetUser() user: User,
-    ): UserInfoDto {
+    ): Promise<UserInfoDto> {
         this.logger.verbose(`User ${user.email} trying to get own infomation.`);
         
-        const userInfo: UserInfoDto = {
-            email: user.email,
-            username: user.username,
-            thumbnail: user.thumbnail,
-            bookMarks: user.bookMarks,
-            statusMessage: user.statusMessage,
-        };
-
-        return userInfo;
+        return this.userService.getUserInfo(user.email);
     }
 
     @ApiResponse({

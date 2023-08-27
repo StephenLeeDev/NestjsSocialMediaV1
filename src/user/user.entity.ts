@@ -43,4 +43,10 @@ export class User extends BaseEntity {
     @OneToMany(() => Follow, follow => follow.following)
     followers: Follow[];
     
+    totalPostCount: number;
+    
+    followerCount: number;
+    
+    followingCount: number;
+    
 }
