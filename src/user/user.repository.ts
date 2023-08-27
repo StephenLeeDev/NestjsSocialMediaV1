@@ -32,8 +32,7 @@ export class UserRepository extends Repository<User> {
         const post = this
             .createQueryBuilder('user')
             .where('user.email = :email', { email })
-            .leftJoin('user.posts', 'post')
-            .where('post.status = :status', { status: PostStatus.PUBLIC })
+            .leftJoinAndSelect('user.posts', 'post', 'post.status = :status', { status: PostStatus.PUBLIC })
             .select('COUNT(post.id)', 'totalPostCount');
         
         const [{ totalPostCount }] = await post.getRawMany();
