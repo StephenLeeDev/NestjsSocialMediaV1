@@ -23,6 +23,10 @@ export class FollowService {
         return this.followRepository.createFollow(follower, user);
     }
 
+    async getIsFollowing(myEmail: string, userEmail: string): Promise<boolean> {
+        return this.followRepository.getIsFollowing(myEmail, userEmail);
+    }
+
     async getFollowerCount(email: string): Promise<number> {
         return await this.followRepository.getFollowerCount(email);
     }

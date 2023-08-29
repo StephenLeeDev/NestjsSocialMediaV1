@@ -34,6 +34,25 @@ export class FollowController {
         return this.followService.createFollow(user, following);
     }
 
+    /// It returns the current user following the user, or not
+    @ApiResponse({
+        status: 200,
+        description: 'Success',
+    })
+    @ApiQuery({
+        name: 'email',
+        description: `The other user's email`,
+        required: true,
+    })
+    @ApiOperation({ summary: `Get is following the user, or not` })
+    @Get('/isFollowing')
+    getIsFollowing(
+        @GetUser() user: User,
+        @Query('email') email: string,
+    ): Promise<boolean> {
+        return this.followService.getIsFollowing(user.email, email);
+    }
+
     @ApiResponse({
         type: Number,
         status: 200,

@@ -20,6 +20,20 @@ export class FollowRepository extends Repository<Follow> {
         await this.save(follow);
     }
 
+    /// It returns the current user following the user, or not
+    async getIsFollowing(myEmail: string, userEmail: string): Promise<boolean> {
+        const result = await this.createQueryBuilder('follow')
+            .select('COUNT(*)', 'count')
+            .leftJoin('follow.following', 'following')
+            .leftJoin('follow.follower', 'user')
+            .where('following.email = :userEmail', { userEmail })
+            .andWhere('user.email = :myEmail', { myEmail })
+            .getRawOne();
+    
+        const isFollowing = result.count > 0;
+        return isFollowing;
+    }
+
     async getFollowerCount(email: string): Promise<number> {
         return this.createQueryBuilder('follow')
             .leftJoinAndSelect('follow.following', 'following')
