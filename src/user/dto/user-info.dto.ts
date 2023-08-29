@@ -44,12 +44,12 @@ export class UserInfoDto {
     example: 5,
     description: `The number of user's followers`,
   })
-  followers: number;
+  followerCount: number;
 
   @ApiProperty({
     example: 7,
     description: `The number of user's followings`,
   })
-  followings: number;
+  followingCount: number;
 
 }
