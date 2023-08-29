@@ -11,6 +11,7 @@ import { diskStorage } from 'multer';
 import { editFileName, imageFileFilter } from 'src/lib/multerOptions';
 import { UpdatedUserThumbnailDto } from './dto/updated-user-thumbnail.dto';
 import { ConfigService } from '@nestjs/config';
+import { UserInfoIncludingIsFollowingDto } from './dto/user-info-including-isfollowing.dto';
 
 @ApiTags('USER')
 @UseGuards(AuthGuard())
@@ -25,6 +26,7 @@ export class UserController {
         private readonly configService: ConfigService
     ) { }
 
+    /// Get my user information
     @ApiResponse({
         type: UserInfoDto,
         status: 200,
@@ -38,6 +40,29 @@ export class UserController {
         this.logger.verbose(`User ${user.email} trying to get own infomation.`);
         
         return this.userService.getUserInfo(user.email);
+    }
+
+    /// Get other user information
+    /// it's not for current user
+    /// If you want to get current user's information, use getMyInfo()
+    @ApiResponse({
+        type: UserInfoIncludingIsFollowingDto,
+        status: 200,
+        description: 'Success',
+    })
+    @ApiQuery({
+        name: 'userEmail',
+        description: `The user's email who you're trying look up`,
+        required: true,
+    })
+    @ApiOperation({ summary: `Get other user information. it's not for current user.` })
+    @Get('/:userEmail')
+    getUserInfoByEmail(
+        @GetUser() user: User,
+        @Query('userEmail') userEmail: string,
+    ): Promise<UserInfoIncludingIsFollowingDto> {
+        
+        return this.userService.getUserInfoByEmail(user.email, userEmail);
     }
 
     @ApiResponse({

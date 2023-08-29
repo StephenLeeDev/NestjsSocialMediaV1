@@ -45,8 +45,8 @@ export class UserRepository extends Repository<User> {
             userInfo.bookMarks = user.bookMarks;
             userInfo.statusMessage = user.statusMessage;
             userInfo.totalPostCount = isNaN(parseInt(totalPostCount, 10)) ? 0 : parseInt(totalPostCount, 10);
-            userInfo.followers = user.followerCount;
-            userInfo.followings = user.followingCount;
+            userInfo.followerCount = user.followerCount;
+            userInfo.followingCount = user.followingCount;
             return userInfo;
         } else {
             throw new NotFoundException(`User not found`);
