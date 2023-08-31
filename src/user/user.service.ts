@@ -32,6 +32,7 @@ export class UserService {
         userInfoIncludingIsFollowing.thumbnail = userInfo.thumbnail
         userInfoIncludingIsFollowing.bookMarks = userInfo.bookMarks
         userInfoIncludingIsFollowing.statusMessage = userInfo.statusMessage
+        userInfoIncludingIsFollowing.totalPostCount = userInfo.totalPostCount
         userInfoIncludingIsFollowing.followerCount = userInfo.followerCount
         userInfoIncludingIsFollowing.followingCount = userInfo.followingCount
 
