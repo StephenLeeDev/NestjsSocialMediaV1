@@ -48,6 +48,15 @@ export class FollowRepository extends Repository<Follow> {
             .getCount();
     }
 
+    async cancelFollowing(follower: string, following: string): Promise<void> {
+        await this.createQueryBuilder('follow')
+            .leftJoinAndSelect('follow.follower', 'follower')
+            .leftJoinAndSelect('follow.following', 'following')
+            .where('follower.email = :follower AND following.email = :following', { follower, following })
+            .delete()
+            .execute();
+    }
+
     async getFollowerList(email: string, page: number, limit: number): Promise<FollowListDto> {
 
         const query = this.createQueryBuilder('follow')

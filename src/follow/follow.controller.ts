@@ -81,20 +81,20 @@ export class FollowController {
 
     @ApiResponse({
         status: 200,
-        description: 'Total following count',
+        description: 'Unfollow the user',
     })
     @ApiQuery({
-        name: 'following',
-        description: `Cancel following`,
+        name: 'email',
+        description: `The email address of the following user to unfollow`,
         required: true,
     })
-    @ApiOperation({ summary: `Total following count` })
+    @ApiOperation({ summary: `Unfollow the user` })
     @Delete('/following/cancel')
     cancelFollowing(
         @GetUser() user: User,
-        @Query('following') following: string,
+        @Query('email') email: string,
     ): Promise<void> {
-        return this.followService.cancelFollowing(user.email, following);
+        return this.followService.cancelFollowing(user.email, email);
     }
 
     @ApiResponse({

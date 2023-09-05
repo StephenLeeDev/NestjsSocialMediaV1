@@ -35,13 +35,8 @@ export class FollowService {
         return await this.followRepository.getFollowingCount(email);
     }
 
-    async cancelFollowing(follower: string, following: string): Promise<void> {
-        await this.followRepository.createQueryBuilder('follow')
-        .leftJoinAndSelect('follow.follower', 'follower')
-        .leftJoinAndSelect('follow.following', 'following')
-        .where('follower.email = :follower AND following.email = :following', { follower, following })
-        .delete()
-        .execute();
+    async cancelFollowing(myEmail: string, email: string): Promise<void> {
+        await this.followRepository.cancelFollowing(myEmail, email);
     }
 
     async getFollowerList(email: string, page: number, limit: number): Promise<FollowListDto> {
