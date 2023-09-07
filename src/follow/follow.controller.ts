@@ -5,6 +5,7 @@ import { FollowService } from './follow.service';
 import { User } from 'src/user/user.entity';
 import { AuthGuard } from '@nestjs/passport';
 import { FollowListDto } from './dto/follow-list.dto';
+import { SingleIntegerDto } from './dto/single-integer.dto';
 
 @ApiTags('FOLLOW')
 @UseGuards(AuthGuard())
@@ -17,8 +18,9 @@ export class FollowController {
     ) { }
 
     @ApiResponse({
+        type: Number,
         status: 201,
-        description: 'Success',
+        description: 'Total follower count',
     })
     @ApiQuery({
         name: 'following',
@@ -30,7 +32,7 @@ export class FollowController {
     createFollow(
         @GetUser() user: User,
         @Query('following') following: string,
-    ): Promise<void> {
+    ): Promise<SingleIntegerDto> {
         return this.followService.createFollow(user, following);
     }
 
@@ -80,8 +82,9 @@ export class FollowController {
     }
 
     @ApiResponse({
+        type: Number,
         status: 200,
-        description: 'Unfollow the user',
+        description: 'Total follower count',
     })
     @ApiQuery({
         name: 'email',
@@ -93,7 +96,7 @@ export class FollowController {
     cancelFollowing(
         @GetUser() user: User,
         @Query('email') email: string,
-    ): Promise<void> {
+    ): Promise<SingleIntegerDto> {
         return this.followService.cancelFollowing(user.email, email);
     }
 

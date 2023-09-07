@@ -4,6 +4,7 @@ import { FollowRepository } from './follow.repository';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/user/user.entity';
 import { FollowListDto } from './dto/follow-list.dto';
+import { SingleIntegerDto } from './dto/single-integer.dto';
 
 @Injectable()
 export class FollowService {
@@ -16,11 +17,14 @@ export class FollowService {
 
     private logger = new Logger('FollowService');
 
-    async createFollow(follower: User, following: string): Promise<void> {
+    async createFollow(follower: User, following: string): Promise<SingleIntegerDto> {
 
         const user = await this.userRepository.findOne({ email: following });
+        await this.followRepository.createFollow(follower, user);
 
-        return this.followRepository.createFollow(follower, user);
+        let singleIntegerDto: SingleIntegerDto = new SingleIntegerDto();
+        singleIntegerDto.value = await this.followRepository.getFollowerCount(following);
+        return singleIntegerDto;
     }
 
     async getIsFollowing(myEmail: string, userEmail: string): Promise<boolean> {
@@ -35,8 +39,12 @@ export class FollowService {
         return await this.followRepository.getFollowingCount(email);
     }
 
-    async cancelFollowing(myEmail: string, email: string): Promise<void> {
+    async cancelFollowing(myEmail: string, email: string): Promise<SingleIntegerDto> {
         await this.followRepository.cancelFollowing(myEmail, email);
+
+        let singleIntegerDto: SingleIntegerDto = new SingleIntegerDto();
+        singleIntegerDto.value = await this.followRepository.getFollowerCount(email);
+        return singleIntegerDto;
     }
 
     async getFollowerList(email: string, page: number, limit: number): Promise<FollowListDto> {
