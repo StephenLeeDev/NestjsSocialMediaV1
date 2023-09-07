@@ -15,8 +15,8 @@ export class UserRepository extends Repository<User> {
             .createQueryBuilder('user')
             .where('user.email = :email', { email })
             .leftJoin('user.followings', 'follow')
-            .loadRelationCountAndMap('user.followerCount', 'user.followings')
-            .loadRelationCountAndMap('user.followingCount', 'user.followers')
+            .loadRelationCountAndMap('user.followerCount', 'user.followers')
+            .loadRelationCountAndMap('user.followingCount', 'user.followings')
             .select([
                 'user.email',
                 'user.username',
