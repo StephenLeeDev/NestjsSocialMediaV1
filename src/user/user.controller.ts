@@ -12,6 +12,7 @@ import { editFileName, imageFileFilter } from 'src/lib/multerOptions';
 import { UpdatedUserThumbnailDto } from './dto/updated-user-thumbnail.dto';
 import { ConfigService } from '@nestjs/config';
 import { UserInfoIncludingIsFollowingDto } from './dto/user-info-including-isfollowing.dto';
+import { UserListDto } from './dto/user-list.dto';
 
 @ApiTags('USER')
 @UseGuards(AuthGuard())
@@ -129,6 +130,37 @@ export class UserController {
         @Query('newStatusMessage') newStatusMessage: string,
     ): Promise<void> {
         return this.userService.updateStatusMessage(user.email, newStatusMessage);
+    }
+
+    @ApiResponse({
+        type: UserListDto,
+        status: 200,
+        description: 'Success',
+    })
+    @ApiQuery({
+        name: 'keyword',
+        description: `Returns users whose username contains the keyword`,
+        required: true,
+        allowEmptyValue : true
+    })
+    @ApiQuery({
+        name: 'page',
+        description: `The page's number to call`,
+        required: true,
+    })
+    @ApiQuery({
+        name: 'limit',
+        description: `The number of items on a single page`,
+        required: true,
+    })
+    @ApiOperation({ summary: `Search user list by keyword` })
+    @Get('/search/users')
+    getUserListByKeyword(
+        @Query('keyword') keyword: string,
+        @Query('page', ParseIntPipe) page: number,
+        @Query('limit', ParseIntPipe) limit: number,
+    ): Promise<UserListDto> {
+        return this.userService.getUserListByKeyword(keyword, page, limit);
     }
 
 }

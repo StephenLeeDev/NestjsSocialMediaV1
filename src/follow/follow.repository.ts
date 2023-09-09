@@ -3,7 +3,7 @@ import { Follow } from "./follow.entity";
 import { Logger } from "@nestjs/common";
 import { User } from "src/user/user.entity";
 import { UserListDto } from "../user/dto/user-list.dto";
-import { UserInfoDto } from "src/user/dto/user-info.dto";
+import { UserSimpleInfoIncludingStatusMessageDto } from "src/user/dto/user-simple-info-including-status-message.dto";
 
 @EntityRepository(Follow)
 export class FollowRepository extends Repository<Follow> {
@@ -68,8 +68,8 @@ export class FollowRepository extends Repository<Follow> {
         
         const [follows, total] = await query.getManyAndCount();
         
-        const userList: UserInfoDto[] = follows.map((follow: Follow) => {
-            const userInfo: UserInfoDto = new UserInfoDto();
+        const userList: UserSimpleInfoIncludingStatusMessageDto[] = follows.map((follow: Follow) => {
+            const userInfo: UserSimpleInfoIncludingStatusMessageDto = new UserSimpleInfoIncludingStatusMessageDto();
             userInfo.email = follow.follower.email;
             userInfo.username = follow.follower.username;
             userInfo.thumbnail = follow.follower.thumbnail;
@@ -91,8 +91,8 @@ export class FollowRepository extends Repository<Follow> {
         
         const [follows, total] = await query.getManyAndCount();
         
-        const userList: UserInfoDto[] = follows.map((follow: Follow) => {
-            const userInfo: UserInfoDto = new UserInfoDto();
+        const userList: UserSimpleInfoIncludingStatusMessageDto[] = follows.map((follow: Follow) => {
+            const userInfo: UserSimpleInfoIncludingStatusMessageDto = new UserSimpleInfoIncludingStatusMessageDto();
             userInfo.email = follow.following.email;
             userInfo.username = follow.following.username;
             userInfo.thumbnail = follow.following.thumbnail;
