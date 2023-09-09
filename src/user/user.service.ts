@@ -6,6 +6,7 @@ import { PostRepository } from 'src/post/post.repository';
 import { UpdatedUserThumbnailDto } from './dto/updated-user-thumbnail.dto';
 import { FollowRepository } from 'src/follow/follow.repository';
 import { UserInfoIncludingIsFollowingDto } from './dto/user-info-including-isfollowing.dto';
+import { UserListDto } from './dto/user-list.dto';
 
 @Injectable()
 export class UserService {
@@ -57,4 +58,8 @@ export class UserService {
         return await this.userRepository.updateStatusMessage(email, newStatusMessage);
     }
     
+    async getUserListByKeyword(keyword: string, page: number, limit: number): Promise<UserListDto> {
+        return await this.userRepository.getUserListByKeyword(keyword, page, limit);
+    }
+
 }

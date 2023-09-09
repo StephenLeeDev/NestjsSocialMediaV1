@@ -5,6 +5,8 @@ import { NotFoundException } from "@nestjs/common";
 import { bookMarksDTO } from "./dto/book-marks.dto";
 import { UpdatedUserThumbnailDto } from "./dto/updated-user-thumbnail.dto";
 import { PostStatus } from "src/post/post-status.enum";
+import { UserListDto } from "./dto/user-list.dto";
+import { UserSimpleInfoIncludingStatusMessageDto } from "./dto/user-simple-info-including-status-message.dto";
 
 @EntityRepository(User)
 export class UserRepository extends Repository<User> {
@@ -107,6 +109,27 @@ export class UserRepository extends Repository<User> {
         } else {
             throw new NotFoundException(`User not found`);
         }
+    }
+
+    async getUserListByKeyword(keyword: string, page: number, limit: number): Promise<UserListDto> {
+
+        const query = this.createQueryBuilder('user')
+            .where('user.username LIKE :keyword', { keyword: `%${keyword}%` })
+            .skip((page - 1) * limit)
+            .take(limit);
+        
+        const [users, total] = await query.getManyAndCount();
+        
+        const userList: UserSimpleInfoIncludingStatusMessageDto[] = users.map((user: User) => {
+            const userInfo: UserSimpleInfoIncludingStatusMessageDto = new UserSimpleInfoIncludingStatusMessageDto();
+            userInfo.email = user.email;
+            userInfo.username = user.username;
+            userInfo.thumbnail = user.thumbnail;
+            userInfo.statusMessage = user.statusMessage;
+            return userInfo;
+        });
+
+        return { userList, total };
     }
 
 }
