@@ -1,3 +1,4 @@
+import { Follow } from "src/follow/follow.entity";
 import { PostEntity } from "src/post/post.entity";
 import { BaseEntity, Column, Entity, JoinColumn, OneToMany, Unique } from "typeorm";
 
@@ -36,4 +37,16 @@ export class User extends BaseEntity {
     @Column({ default: "" })
     statusMessage: string;
 
+    @OneToMany(() => Follow, follow => follow.follower)
+    followings: Follow[];
+  
+    @OneToMany(() => Follow, follow => follow.following)
+    followers: Follow[];
+    
+    totalPostCount: number;
+    
+    followerCount: number;
+    
+    followingCount: number;
+    
 }

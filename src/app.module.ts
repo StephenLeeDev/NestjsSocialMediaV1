@@ -8,6 +8,7 @@ import { ChatController } from './chat/chat.controller';
 import { UserModule } from './user/user.module';
 import { ConfigModule } from '@nestjs/config';
 import { CommentModule } from './comment/comment.module';
+import { FollowModule } from './follow/follow.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { CommentModule } from './comment/comment.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    FollowModule,
   ],
   providers: [ChatGateway],
   controllers: [ChatController],
