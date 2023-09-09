@@ -4,20 +4,54 @@ import { UserInfoDto } from "./dto/user-info.dto";
 import { NotFoundException } from "@nestjs/common";
 import { bookMarksDTO } from "./dto/book-marks.dto";
 import { UpdatedUserThumbnailDto } from "./dto/updated-user-thumbnail.dto";
+import { PostStatus } from "src/post/post-status.enum";
 
 @EntityRepository(User)
 export class UserRepository extends Repository<User> {
     
     async getUserInfo(email: string): Promise<UserInfoDto> {
         
-        const user = await this.findOne({ email });
-
+        const user = await this
+            .createQueryBuilder('user')
+            .where('user.email = :email', { email })
+            .leftJoin('user.followings', 'follow')
+            .loadRelationCountAndMap('user.followerCount', 'user.followers')
+            .loadRelationCountAndMap('user.followingCount', 'user.followings')
+            .select([
+                'user.email',
+                'user.username',
+                'user.thumbnail',
+                'user.bookMarks',
+                'user.statusMessage',
+                'COUNT(follow.id) AS followerCount',
+                'COUNT(follow.id) AS followingCount',
+            ])
+            .groupBy('user.email')
+            .getOne();
+        
+        const post = this
+            .createQueryBuilder('user')
+            .where('user.email = :email', { email })
+            .leftJoinAndSelect('user.posts', 'post', 'post.status = :status', { status: PostStatus.PUBLIC })
+            .select('COUNT(post.id)', 'totalPostCount');
+        
+        const [{ totalPostCount }] = await post.getRawMany();
+        
         if (user) {
-            const { email, username, thumbnail, bookMarks, statusMessage } = user;
-            return { email, username, thumbnail, bookMarks, statusMessage };
+            let userInfo: UserInfoDto = new UserInfoDto();
+            userInfo.email = user.email;
+            userInfo.username = user.username;
+            userInfo.thumbnail = user.thumbnail;
+            userInfo.bookMarks = user.bookMarks;
+            userInfo.statusMessage = user.statusMessage;
+            userInfo.totalPostCount = isNaN(parseInt(totalPostCount, 10)) ? 0 : parseInt(totalPostCount, 10);
+            userInfo.followerCount = user.followerCount;
+            userInfo.followingCount = user.followingCount;
+            return userInfo;
         } else {
-            throw new NotFoundException(`User not found.`);
+            throw new NotFoundException(`User not found`);
         }
+        
     }
 
     async postBookMark(email: string, postId: number): Promise<bookMarksDTO> {
