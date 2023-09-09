@@ -4,7 +4,7 @@ import { GetUser } from 'src/auth/get-user.decorator';
 import { FollowService } from './follow.service';
 import { User } from 'src/user/user.entity';
 import { AuthGuard } from '@nestjs/passport';
-import { FollowListDto } from './dto/follow-list.dto';
+import { UserListDto } from '../user/dto/user-list.dto';
 import { SingleIntegerDto } from './dto/single-integer.dto';
 
 @ApiTags('FOLLOW')
@@ -101,9 +101,14 @@ export class FollowController {
     }
 
     @ApiResponse({
-        type: FollowListDto,
+        type: UserListDto,
         status: 200,
         description: 'Success',
+    })
+    @ApiQuery({
+        name: 'email',
+        description: `The user's email address to fetch`,
+        required: true,
     })
     @ApiQuery({
         name: 'page',
@@ -118,17 +123,22 @@ export class FollowController {
     @ApiOperation({ summary: `Get follower list` })
     @Get('/follower')
     getFollowerList(
-        @GetUser() user: User,
+        @Query('email') email: string,
         @Query('page', ParseIntPipe) page: number,
         @Query('limit', ParseIntPipe) limit: number,
-    ): Promise<FollowListDto> {
-        return this.followService.getFollowerList(user.email, page, limit);
+    ): Promise<UserListDto> {
+        return this.followService.getFollowerList(email, page, limit);
     }
 
     @ApiResponse({
-        type: FollowListDto,
+        type: UserListDto,
         status: 200,
         description: 'Success',
+    })
+    @ApiQuery({
+        name: 'email',
+        description: `The user's email address to fetch`,
+        required: true,
     })
     @ApiQuery({
         name: 'page',
@@ -143,11 +153,11 @@ export class FollowController {
     @ApiOperation({ summary: `Get following list` })
     @Get('/following')
     getFollowingList(
-        @GetUser() user: User,
+        @Query('email') email: string,
         @Query('page', ParseIntPipe) page: number,
         @Query('limit', ParseIntPipe) limit: number,
-    ): Promise<FollowListDto> {
-        return this.followService.getFollowingList(user.email, page, limit);
+    ): Promise<UserListDto> {
+        return this.followService.getFollowingList(email, page, limit);
     }
 
 }
