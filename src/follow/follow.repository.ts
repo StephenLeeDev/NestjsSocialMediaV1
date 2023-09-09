@@ -2,7 +2,7 @@ import { EntityRepository, Repository } from "typeorm";
 import { Follow } from "./follow.entity";
 import { Logger } from "@nestjs/common";
 import { User } from "src/user/user.entity";
-import { FollowListDto } from "./dto/follow-list.dto";
+import { UserListDto } from "../user/dto/user-list.dto";
 import { UserInfoDto } from "src/user/dto/user-info.dto";
 
 @EntityRepository(Follow)
@@ -57,7 +57,7 @@ export class FollowRepository extends Repository<Follow> {
             .execute();
     }
 
-    async getFollowerList(email: string, page: number, limit: number): Promise<FollowListDto> {
+    async getFollowerList(email: string, page: number, limit: number): Promise<UserListDto> {
 
         const query = this.createQueryBuilder('follow')
             .leftJoinAndSelect('follow.following', 'following')
@@ -77,10 +77,10 @@ export class FollowRepository extends Repository<Follow> {
             return userInfo;
         });
 
-        return { follows: userList, total };
+        return { userList, total };
     }
 
-    async getFollowingList(email: string, page: number, limit: number): Promise<FollowListDto> {
+    async getFollowingList(email: string, page: number, limit: number): Promise<UserListDto> {
 
         const query = this.createQueryBuilder('follow')
             .leftJoinAndSelect('follow.follower', 'follower')
@@ -100,7 +100,7 @@ export class FollowRepository extends Repository<Follow> {
             return userInfo;
         });
 
-        return { follows: userList, total };
+        return { userList, total };
     }
 
 }

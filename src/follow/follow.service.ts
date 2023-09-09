@@ -3,7 +3,7 @@ import { UserRepository } from 'src/user/user.repository';
 import { FollowRepository } from './follow.repository';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/user/user.entity';
-import { FollowListDto } from './dto/follow-list.dto';
+import { UserListDto } from '../user/dto/user-list.dto';
 import { SingleIntegerDto } from './dto/single-integer.dto';
 
 @Injectable()
@@ -47,11 +47,11 @@ export class FollowService {
         return singleIntegerDto;
     }
 
-    async getFollowerList(email: string, page: number, limit: number): Promise<FollowListDto> {
+    async getFollowerList(email: string, page: number, limit: number): Promise<UserListDto> {
         return await this.followRepository.getFollowerList(email, page, limit);
     }
 
-    async getFollowingList(email: string, page: number, limit: number): Promise<FollowListDto> {
+    async getFollowingList(email: string, page: number, limit: number): Promise<UserListDto> {
         return await this.followRepository.getFollowingList(email, page, limit);
     }
 
