@@ -1,11 +1,10 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsNotEmpty } from "class-validator";
-import { UserInfoDto } from "src/user/dto/user-info.dto";
+import { UserSimpleInfoIncludingStatusMessageDto } from "./user-simple-info-including-status-message.dto";
 
 export class UserListDto {
 
-  @ApiProperty({ type: [UserInfoDto] })
-  userList: UserInfoDto[];
+  @ApiProperty({ type: [UserSimpleInfoIncludingStatusMessageDto] })
+  userList: UserSimpleInfoIncludingStatusMessageDto[];
   @ApiProperty({
       example: 10,
       description: `The total count can call`,
