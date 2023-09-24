@@ -143,7 +143,7 @@ export class PostService {
 
     async createDummyPosts(): Promise<void> {
 
-        const count = 5;
+        const count = 10;
 
         let users = await this.userRepository.find({ take: count });
 

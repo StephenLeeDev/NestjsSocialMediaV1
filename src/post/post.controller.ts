@@ -221,7 +221,7 @@ export class PostController {
         status: 201,
         description: 'Success',
     })
-    @ApiOperation({ summary: 'Create 5 dummy posts' })
+    @ApiOperation({ summary: 'Create 10 dummy posts' })
     @Post('/test/dummy')
     createDummyPosts(): Promise<void> {
         return this.postService.createDummyPosts();

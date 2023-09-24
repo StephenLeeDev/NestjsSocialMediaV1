@@ -71,7 +71,7 @@ export class CommentService {
     // Create dummy comments or relies
     // A Comment represents a comment on a post, while a Reply represents a comment on a Comment.
     async createDummyComments(createCommentDto: CreateCommentDto): Promise<void> {
-        const count = 5;
+        const count = 10;
         let users = await this.userRepository.find({ take: count });
     
         if (users.length < count) {
