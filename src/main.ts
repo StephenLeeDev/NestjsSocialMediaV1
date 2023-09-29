@@ -3,7 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
-import { SocketIoAdapter } from './chat/socket-io.adapters';
+import { SocketIoAdapter } from './chatroom/socket-io.adapters';
 import { DocumentBuilder, SwaggerCustomOptions, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 
