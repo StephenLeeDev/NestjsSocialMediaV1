@@ -19,11 +19,11 @@ import { MessageModule } from './message/message.module';
     PostModule,
     CommentModule,
     ChatModule,
+    MessageModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),
     FollowModule,
-    MessageModule,
   ],
   providers: [ChatGateway],
 })

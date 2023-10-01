@@ -23,7 +23,7 @@ export class CommentService {
         private authRepository: AuthRepository,
     ) { }
 
-    private logger = new Logger('PostService');
+    private logger = new Logger('CommentService');
 
     async createComment(createCommentDto: CreateCommentDto, user: User): Promise<CommentInfoDto> {
         const post = await this.getPostById(createCommentDto.postId);
