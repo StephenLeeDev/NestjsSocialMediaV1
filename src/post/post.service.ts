@@ -141,21 +141,35 @@ export class PostService {
         await this.postRepository.save(post);
     }
 
-    async createDummyPosts(): Promise<void> {
+    async createDummyPosts(email?: string): Promise<void> {
 
-        const count = 5;
+        const count = 10;
+        const user = await this.userRepository.findOne({ email });
 
-        let users = await this.userRepository.find({ take: count });
+        let users = [];
+        let duplicatedUsers = [];
+        let shuffledUsers = [];
 
-        if (users.length < count) {
-            await this.authRepository.createDummyUsers();
-            users = await this.userRepository.find({ take: count });
+        /// Create dummy posts just specific user
+        if (user) {
+            for (let i = 0; i < 10; i++) {
+                shuffledUsers.push(user);
+            }
         }
-
-        const duplicatedUsers = [...users, ...users.slice(0, count - users.length)];
-        const shuffledUsers = shuffleArray(duplicatedUsers);
+        /// Create dummy posts for random users
+        else {
+            users = await this.userRepository.find({ take: count });
+    
+            if (users.length < count) {
+                await this.authRepository.createDummyUsers();
+                users = await this.userRepository.find({ take: count });
+            }
+    
+            duplicatedUsers = [...users, ...users.slice(0, count - users.length)];
+            shuffledUsers = shuffleArray(duplicatedUsers);
+        }
         
-        const totalImageCount = 20;
+        const totalImageCount = count * 2;
 
         function shuffleArray(array: any[]): any[] {
             const newArray = [...array];

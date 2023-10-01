@@ -1,6 +1,8 @@
+import { MessageEntity } from "src/message/message.entity";
 import { Follow } from "src/follow/follow.entity";
 import { PostEntity } from "src/post/post.entity";
 import { BaseEntity, Column, Entity, JoinColumn, OneToMany, Unique } from "typeorm";
+import { UserChatRoomEntity } from "src/chatroom/user-chatroom.entity";
 
 const serverUrl = 'http://192.168.1.251:3001'
 
@@ -37,6 +39,13 @@ export class User extends BaseEntity {
     @Column({ default: "" })
     statusMessage: string;
 
+    @OneToMany(() => UserChatRoomEntity, chatRoom => chatRoom.user)
+    @JoinColumn([{ name: 'chatRoomId', referencedColumnName: 'id' }])
+    userChatRooms: UserChatRoomEntity[];
+
+    @OneToMany(() => MessageEntity, message => message.sender)
+    messages: MessageEntity[];
+  
     @OneToMany(() => Follow, follow => follow.follower)
     followings: Follow[];
   

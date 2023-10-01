@@ -140,7 +140,7 @@ export class CommentController {
         description: 'Success',
     })
     @ApiBody({ type: CreateDummyCommentDto })
-    @ApiOperation({ summary: `Create 5 dummy comments or replies` })
+    @ApiOperation({ summary: `Create 10 dummy comments or replies` })
     @Post('/test/dummy')
     createDummyComments(
         @Body() createDummyCommentDto: CreateDummyCommentDto,

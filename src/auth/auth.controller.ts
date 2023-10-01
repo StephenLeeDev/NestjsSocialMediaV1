@@ -47,7 +47,7 @@ export class AuthController {
         status: 201,
         description: 'Success',
     })
-    @ApiOperation({ summary: `Create 5 dummy users` })
+    @ApiOperation({ summary: `Create 10 dummy users` })
     @Post('/test/dummy')
     createDummyUsers(): Promise<void> {
         return this.authService.createDummyUsers();
