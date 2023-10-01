@@ -20,4 +20,5 @@ export class ChatRoomEntity {
     @Column()
     updatedAt: Date;
 
+    latestMessage: MessageEntity;
 }

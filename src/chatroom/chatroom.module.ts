@@ -6,6 +6,7 @@ import { ChatRoomController } from './chatroom.controller';
 import { UserRepository } from "src/user/user.repository";
 import { AuthModule } from "src/auth/auth.module";
 import { UserChatRoomRepository } from "./user-chatroom.repository";
+import { MessageRepository } from "src/message/message.repository";
 
 @Module({
     imports: [
@@ -13,6 +14,7 @@ import { UserChatRoomRepository } from "./user-chatroom.repository";
         ChatRoomRepository,
         UserRepository,
         UserChatRoomRepository,
+        MessageRepository,
       ]),
       AuthModule,
     ],

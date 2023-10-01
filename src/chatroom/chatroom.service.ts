@@ -3,9 +3,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { ChatRoomRepository } from './chatroom.repository';
 import { UserRepository } from 'src/user/user.repository';
 import { User } from 'src/user/user.entity';
-import { ChatRoomDto } from './dto/chatroom.dto';
+import { ChatRoomDto, ChatRoomListDto } from './dto/chatroom.dto';
 import { UserChatRoomRepository } from './user-chatroom.repository';
 import * as moment from 'moment-timezone';
+import { MessageRepository } from 'src/message/message.repository';
+import { UserInfoIncludingIsFollowingDto } from 'src/user/dto/user-info-including-isfollowing.dto';
+import { UserSimpleInfoIncludingStatusMessageDto } from 'src/user/dto/user-simple-info-including-status-message.dto';
 
 @Injectable()
 export class ChatRoomService {
@@ -16,11 +19,12 @@ export class ChatRoomService {
         private userRepository: UserRepository,
         @InjectRepository(UserChatRoomRepository)
         private userChatRepository: UserChatRoomRepository,
+        @InjectRepository(MessageRepository)
+        private messageRepository: MessageRepository,
     ) { }
 
     async createChatRoom(sender: User, receiverEmail: string): Promise<ChatRoomDto> {
         const receiver = await this.userRepository.findOne({ email: receiverEmail });
-        // return await this.chatRepository.createChatRoom(sender, receiver);
 
         const found = await this.userChatRepository.findChatRoomByParticipants(sender, receiver);
 
@@ -67,6 +71,28 @@ export class ChatRoomService {
             room.updatedAt = room.updatedAt;
             return room;
         }
+    }
+
+    async getChatRoomList(user: User, page: number, limit: number): Promise<ChatRoomListDto> {
+        var chatRooms = await this.userChatRepository.getChatRoomList(user, page, limit);
+
+        /// Find latest message
+        for (var chatRoomDto of chatRooms.list) {
+            const latestMessage = await this.messageRepository.findLastMessageByChatRoomId(chatRoomDto.id);
+            chatRoomDto.latestMessage = latestMessage;
+        }
+
+        /// Find chat partner
+        for (var chatRoomDto of chatRooms.list) {
+            const partner = await this.userChatRepository.findChatPartnerByChatRoomId(chatRoomDto.id, user);
+            chatRoomDto.chatPartner = new UserSimpleInfoIncludingStatusMessageDto;
+            chatRoomDto.chatPartner.email = partner.email;
+            chatRoomDto.chatPartner.username = partner.username;
+            chatRoomDto.chatPartner.thumbnail = partner.thumbnail;
+            chatRoomDto.chatPartner.statusMessage = partner.statusMessage;
+        }
+
+        return chatRooms;
     }
 
 }
