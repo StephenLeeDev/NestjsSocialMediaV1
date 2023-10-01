@@ -42,7 +42,7 @@ export class AuthRepository extends Repository<User> {
         const serverUrl = process.env.SERVER_URL;
         const thumbnailsCount = 20;
     
-        const usernames = ['Mike', 'Ash', 'Jack', 'Kate', 'Max'];
+        const usernames = ['Mike', 'Ash', 'Jack', 'Kate', 'Max', 'Rose', 'John', 'Smith', 'Susan', 'Sam'];
     
         for (let i = 0; i < usernames.length; i++) {
             const username = usernames[i];
