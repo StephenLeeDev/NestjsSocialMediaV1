@@ -95,6 +95,17 @@ export class UserRepository extends Repository<User> {
         return updatedUserThumbnailDto;
     }
     
+    async deleteThumbnail(user: User): Promise<UpdatedUserThumbnailDto> {
+        const defaultThumbnail = "http://192.168.1.251:3001/images/default/dafault_thumbnail.png";
+        user.thumbnail = defaultThumbnail;
+        await this.save(user)
+
+        const updatedUserThumbnailDto = new UpdatedUserThumbnailDto();
+        updatedUserThumbnailDto.updatedThumbnail = user.thumbnail;
+    
+        return updatedUserThumbnailDto;
+    }
+    
     async updateStatusMessage(
         email: string,
         newStatusMessage: string,
