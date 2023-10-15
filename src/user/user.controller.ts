@@ -1,4 +1,4 @@
-import { Controller, Get, Logger, ParseIntPipe, Patch, Post, Query, UploadedFile, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, Logger, ParseIntPipe, Patch, Post, Query, UploadedFile, Delete, UseGuards, UseInterceptors } from '@nestjs/common';
 import { UserService } from './user.service';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
@@ -111,6 +111,18 @@ export class UserController {
             user.email,
             `${this.configService.get('SERVER_URL')}/images/${file.filename}`
         );
+    }
+
+    @ApiResponse({
+        status: 200,
+        description: 'Success',
+    })
+    @ApiOperation({ summary: `Delete the user's thumbnail` })
+    @Delete('/thumbnail')
+    deleteThumbnail(
+        @GetUser() user: User,
+    ): Promise<UpdatedUserThumbnailDto> {
+        return this.userService.deleteThumbnail(user);
     }
 
     @ApiResponse({

@@ -7,6 +7,7 @@ import { UpdatedUserThumbnailDto } from './dto/updated-user-thumbnail.dto';
 import { FollowRepository } from 'src/follow/follow.repository';
 import { UserInfoIncludingIsFollowingDto } from './dto/user-info-including-isfollowing.dto';
 import { UserListDto } from './dto/user-list.dto';
+import { User } from './user.entity';
 
 @Injectable()
 export class UserService {
@@ -52,6 +53,10 @@ export class UserService {
     
     async updateUserThumbnail(email: string, newThumbnailUrl: string): Promise<UpdatedUserThumbnailDto> {
         return await this.userRepository.updateUserThumbnail(email, newThumbnailUrl);
+    }
+    
+    async deleteThumbnail(user: User): Promise<UpdatedUserThumbnailDto> {
+        return await this.userRepository.deleteThumbnail(user);
     }
     
     async updateStatusMessage(email: string, newStatusMessage: string): Promise<void> {
