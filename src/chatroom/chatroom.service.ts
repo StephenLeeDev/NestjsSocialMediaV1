@@ -7,7 +7,6 @@ import { ChatRoomDto, ChatRoomListDto } from './dto/chatroom.dto';
 import { UserChatRoomRepository } from './user-chatroom.repository';
 import * as moment from 'moment-timezone';
 import { MessageRepository } from 'src/message/message.repository';
-import { UserInfoIncludingIsFollowingDto } from 'src/user/dto/user-info-including-isfollowing.dto';
 import { UserSimpleInfoIncludingStatusMessageDto } from 'src/user/dto/user-simple-info-including-status-message.dto';
 
 @Injectable()
@@ -32,8 +31,14 @@ export class ChatRoomService {
         /// Return this directly
         if (found) {
             var room = new ChatRoomDto();
+            room.id = found.id;
             room.name = receiver.username;
-            room.participants = [sender, receiver];
+            room.participants = [sender.email, receiverEmail];
+            room.chatPartner = new UserSimpleInfoIncludingStatusMessageDto;
+            room.chatPartner.email = receiverEmail;
+            room.chatPartner.username = receiver.username;
+            room.chatPartner.thumbnail = receiver.thumbnail;
+            room.chatPartner.statusMessage = receiver.statusMessage;
             room.createdAt = found.createdAt;
             room.updatedAt = found.updatedAt;
             return room;
@@ -65,10 +70,16 @@ export class ChatRoomService {
             await this.userChatRepository.save(receiverUserChatroom);
 
             var room = new ChatRoomDto();
+            room.id = chatroom.id;
             room.name = receiver.username;
-            room.participants = [sender, receiver];
-            room.createdAt = room.createdAt;
-            room.updatedAt = room.updatedAt;
+            room.participants = [sender.email, receiverEmail];
+            room.chatPartner = new UserSimpleInfoIncludingStatusMessageDto;
+            room.chatPartner.email = receiverEmail;
+            room.chatPartner.username = receiver.username;
+            room.chatPartner.thumbnail = receiver.thumbnail;
+            room.chatPartner.statusMessage = receiver.statusMessage;
+            room.createdAt = chatroom.createdAt;
+            room.updatedAt = chatroom.updatedAt;
             return room;
         }
     }
