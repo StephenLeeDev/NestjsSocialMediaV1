@@ -1,6 +1,6 @@
-import { Controller, Get, Logger, ParseIntPipe, Patch, Post, Query, UploadedFile, Delete, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, Logger, ParseIntPipe, Patch, Post, Query, UploadedFile, Delete, UseGuards, UseInterceptors, Body } from '@nestjs/common';
 import { UserService } from './user.service';
-import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { UserInfoDto } from './dto/user-info.dto';
 import { GetUser } from 'src/auth/get-user.decorator';
@@ -13,6 +13,8 @@ import { UpdatedUserThumbnailDto } from './dto/updated-user-thumbnail.dto';
 import { ConfigService } from '@nestjs/config';
 import { UserInfoIncludingIsFollowingDto } from './dto/user-info-including-isfollowing.dto';
 import { UserListDto } from './dto/user-list.dto';
+import { PostIdDto } from 'src/post/dto/post-id.dto';
+import { StatusMessageDto } from './dto/status-message.dto';
 
 @ApiTags('USER')
 @UseGuards(AuthGuard())
@@ -24,7 +26,7 @@ export class UserController {
 
     constructor(
         private userService: UserService,
-        private readonly configService: ConfigService
+        private readonly configService: ConfigService,
     ) { }
 
     /// Get my user information
@@ -70,18 +72,14 @@ export class UserController {
         status: 201,
         description: 'Success',
     })
-    @ApiQuery({
-        name: 'postId',
-        description: `The ID of the post to bookmark/unbookmark`,
-        required: true,
-    })
+    @ApiBody({ type: PostIdDto })
     @ApiOperation({ summary: `Bookmark the post if it hasn't been bookmarked yet, or remove the bookmark if it has already been bookmarked.` })
     @Post('/post/bookmark')
     postBookMark(
         @GetUser() user: User,
-        @Query('postId', ParseIntPipe) postId: number,
+        @Body() postIdDto: PostIdDto,
     ): Promise<void> {
-        return this.userService.postBookMark(user.email, postId);
+        return this.userService.postBookMark(user.email, postIdDto.postId);
     }
 
     @ApiResponse({
@@ -129,19 +127,14 @@ export class UserController {
         status: 200,
         description: 'Success',
     })
-    @ApiQuery({
-        name: 'newStatusMessage',
-        description: `New user's status message`,
-        required: true,
-        allowEmptyValue : true
-    })
+    @ApiBody({ type: StatusMessageDto })
     @ApiOperation({ summary: `Update user's status message` })
     @Patch('/statusMessage')
     updateStatusMessage(
         @GetUser() user: User,
-        @Query('newStatusMessage') newStatusMessage: string,
+        @Body() statusMessageDto: StatusMessageDto,
     ): Promise<void> {
-        return this.userService.updateStatusMessage(user.email, newStatusMessage);
+        return this.userService.updateStatusMessage(user.email, statusMessageDto.statusMessage);
     }
 
     @ApiResponse({

@@ -13,6 +13,7 @@ import { ApiImplicitFile } from '@nestjs/swagger/dist/decorators/api-implicit-fi
 import { PostInfoDto, PostResponse } from './dto/post-info.dto';
 import { PostLikeCountDto } from './dto/post-like-count.dto';
 import { UpdatePostDescriptionDto } from './dto/update-post-description.dto';
+import { PostIdDto } from './dto/post-id.dto';
 
 @ApiTags('POST')
 @UseGuards(AuthGuard())
@@ -155,19 +156,15 @@ export class PostController {
         status: 201,
         description: 'Success',
     })
-    @ApiQuery({
-        name: 'postId',
-        description: `The ID of the post to add/remove a like to`,
-        required: true,
-    })
+    @ApiBody({ type: PostIdDto })
     @ApiOperation({ summary: 'Add or remove a like to the post' })
     @Post('/:postId/like')
     likePost(
         @GetUser() user: User,
-        @Query('postId', ParseIntPipe) postId: number,
+        @Body() postIdDto: PostIdDto,
     ): Promise<PostLikeCountDto> {
         return this.postService.likeUnlikePost(
-            postId,
+            postIdDto.postId,
             user.email,
         );
     }
@@ -223,7 +220,7 @@ export class PostController {
     })
     @ApiQuery({
         name: 'email',
-        description: `The email address of the writer of the dummy post; it can be nul`,
+        description: `The email address of the writer of the dummy post; it can be null`,
         required: true,
         allowEmptyValue : true
     })
