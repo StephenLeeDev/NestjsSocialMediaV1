@@ -1,6 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
+
 import { UserSimpleInfoIncludingStatusMessageDto } from "src/user/dto/user-simple-info-including-status-message.dto";
-import { User } from "src/user/user.entity";
 
 export class ChatRoomDto {
 
@@ -23,13 +23,13 @@ export class ChatRoomDto {
     latestMessage: string;
     
     @ApiProperty({
-        example: [`john@gmail.com`, `smith@gmail.com`],
+        example: [`john@gmai.com`, `smith@gmai.com`],
         description: `Participants' email addresses`,
     })
-    participants: User[];
+    participants: string[];
     
     @ApiProperty({
-        type: [UserSimpleInfoIncludingStatusMessageDto],
+        type: UserSimpleInfoIncludingStatusMessageDto,
         description: `Chat partner's information`
     })
     chatPartner: UserSimpleInfoIncludingStatusMessageDto;

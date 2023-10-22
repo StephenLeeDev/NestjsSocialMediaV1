@@ -5,6 +5,7 @@ import { ChatRoomService } from './chatroom.service';
 import { ChatRoomDto, ChatRoomListDto } from './dto/chatroom.dto';
 import { GetUser } from 'src/auth/get-user.decorator';
 import { User } from 'src/user/user.entity';
+import { ReceiverEmailDto } from 'src/user/dto/receiver-email.dto';
 
 @ApiTags('CHAT')
 @UseGuards(AuthGuard())
@@ -21,18 +22,14 @@ export class ChatRoomController {
         status: 201,
         description: 'Success',
     })
-    @ApiQuery({
-        name: 'receiver',
-        description: `The receiver's email address`,
-        required: true,
-    })
+    @ApiBody({ type: ReceiverEmailDto })
     @ApiOperation({ summary: `If a chat room with the receiver already exists, return the chat room information; if it doesn't exist, create and return the chat room` })
     @Post('/')
     createChatRoom(
         @GetUser() user: User,
-        @Query('receiver') receiver: string,
+        @Body() receiverEmailDto: ReceiverEmailDto,
     ): Promise<ChatRoomDto> {
-        return this.chatService.createChatRoom(user, receiver);
+        return this.chatService.createChatRoom(user, receiverEmailDto.email);
     }
 
     @ApiResponse({
