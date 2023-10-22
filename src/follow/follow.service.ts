@@ -18,7 +18,6 @@ export class FollowService {
     private logger = new Logger('FollowService');
 
     async createFollow(follower: User, following: string): Promise<SingleIntegerDto> {
-
         const user = await this.userRepository.findOne({ email: following });
         await this.followRepository.createFollow(follower, user);
 
