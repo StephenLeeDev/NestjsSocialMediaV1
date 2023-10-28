@@ -161,11 +161,12 @@ export class UserController {
     @ApiOperation({ summary: `Search user list by keyword` })
     @Get('/search/users')
     getUserListByKeyword(
+        @GetUser() user: User,
         @Query('keyword') keyword: string,
         @Query('page', ParseIntPipe) page: number,
         @Query('limit', ParseIntPipe) limit: number,
     ): Promise<UserListDto> {
-        return this.userService.getUserListByKeyword(keyword, page, limit);
+        return this.userService.getUserListByKeyword(user, keyword, page, limit);
     }
 
 }
