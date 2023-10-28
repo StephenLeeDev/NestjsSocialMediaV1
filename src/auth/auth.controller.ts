@@ -8,25 +8,25 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 export class AuthController {
     constructor(private authService: AuthService) { }
     
-    @ApiResponse({
-        type: String,
-        status: 201,
-        description: 'Success',
-    })
-    @ApiOperation({ summary: 'Sign up' })
-    @Post('/signup')
-    signUp(
-        @Body() authCredentialsDTO: AuthCredentialsDto
-    ): Promise<{ accessToken: string }> {
-        return this.authService.signUp(authCredentialsDTO);
-    }
+    // @ApiResponse({
+    //     type: String,
+    //     status: 201,
+    //     description: 'Success',
+    // })
+    // @ApiOperation({ summary: 'Sign up' })
+    // @Post('/signup')
+    // signUp(
+    //     @Body() authCredentialsDTO: AuthCredentialsDto
+    // ): Promise<{ accessToken: string }> {
+    //     return this.authService.signUp(authCredentialsDTO);
+    // }
 
     @ApiResponse({
         type: String,
         status: 201,
         description: 'Success',
     })
-    @ApiOperation({ summary: 'Sign in' })
+    @ApiOperation({ summary: `The account already exists; perform [SignIn] if it does, or [SignUp] if it does not` })
     @Post('/signin')
     signIn(@Body(ValidationPipe) AuthCredentialsDto: AuthCredentialsDto): Promise<{accessToken: string}> {
         return this.authService.signIn(AuthCredentialsDto);
