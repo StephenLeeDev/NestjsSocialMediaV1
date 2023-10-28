@@ -53,6 +53,25 @@ export class AuthRepository extends Repository<User> {
             const createdAt = moment().tz('Asia/Seoul').format('YYYY-MM-DD HH:mm:ss.SSS'); // You can set your time zone here
             const uuid = uuidv4();
     
+            const words = ['Lorem', 'ipsum', 'dolor', 'sit', 'amet', 'consectetur', 'adipiscing', 'elit', 'sed', 'do', 'eiusmod', 'tempor', 'incididunt', 'ut', 'labore', 'et', 'dolore', 'magna', 'aliqua'];
+    
+            function generateRandomSentence(): string {
+                const sentenceLength = Math.floor(Math.random() * 10) + 3;
+        
+                let sentence = '';
+        
+                for (let i = 0; i < sentenceLength; i++) {
+                    const randomIndex = Math.floor(Math.random() * words.length);
+                    const word = words[randomIndex];
+                    sentence += word + ' ';
+                }
+        
+                sentence = sentence.trim();
+                sentence += '.';
+        
+                return sentence;
+            }
+            
             const user = this.create({
                 uuid,
                 username,
@@ -61,6 +80,7 @@ export class AuthRepository extends Repository<User> {
                 createdAt,
                 thumbnail,
                 bookMarks: [],
+                statusMessage: generateRandomSentence(),
             });
     
             try {

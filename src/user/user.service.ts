@@ -63,8 +63,8 @@ export class UserService {
         return await this.userRepository.updateStatusMessage(email, newStatusMessage);
     }
     
-    async getUserListByKeyword(keyword: string, page: number, limit: number): Promise<UserListDto> {
-        return await this.userRepository.getUserListByKeyword(keyword, page, limit);
+    async getUserListByKeyword(user: User, keyword: string, page: number, limit: number): Promise<UserListDto> {
+        return await this.userRepository.getUserListByKeyword(user, keyword, page, limit);
     }
 
 }

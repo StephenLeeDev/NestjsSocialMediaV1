@@ -122,10 +122,12 @@ export class UserRepository extends Repository<User> {
         }
     }
 
-    async getUserListByKeyword(keyword: string, page: number, limit: number): Promise<UserListDto> {
+    async getUserListByKeyword(user: User, keyword: string, page: number, limit: number): Promise<UserListDto> {
 
+        const email = user.email;
         const query = this.createQueryBuilder('user')
             .where('user.username LIKE :keyword', { keyword: `%${keyword}%` })
+            .andWhere('user.email <> :email', { email })
             .skip((page - 1) * limit)
             .take(limit);
         
