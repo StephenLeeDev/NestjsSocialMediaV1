@@ -16,6 +16,11 @@ This is a Social Media project that is researching best practices in NestJS deve
 - Search Users
 - REST API integration
 
+## Warning
+
+This project may not work directly on your computer because I've set a constant IP address for the mobile environment
+Please edit the constant IP address before running it, or simply refer to this project as an example
+
 // TODO : Add the Flutter Github link here
 <br><br><br>
 
