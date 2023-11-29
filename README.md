@@ -15,7 +15,7 @@ This is a Social Media project that is researching best practices in NestJS deve
 - Follow
 - Search Users
 - REST API integration
-  <br><br>
+  <br><br><br>
 
 ## Warning
 
@@ -26,13 +26,13 @@ Please edit the constant IP address(serverUrl) before running it, or simply refe
 
 ## YouTube
 
-- [YouTube](https://www.youtube.com/watch?v=9e3alP88V7A)
-  <br><br>
+- [YouTube demo video](https://www.youtube.com/watch?v=9e3alP88V7A)
+  <br><br><br>
 
 ## Flutter Mobile Github Repository
 
 - [Flutter Social Media V1](https://github.com/StephenLeeDev/FlutterSocialMediaV1)
-  <br><br><br>
+  <br><br><br><br>
 
 ## Authentication
 
