@@ -18,18 +18,19 @@ This is a Social Media project that is researching best practices in NestJS deve
 
 ## Warning
 
-This project may not work directly on your computer because I've set a constant IP address for the mobile environment
-Please edit the constant IP address before running it, or simply refer to this project as an example
+This project may not work directly on your computer because I've set a constant IP address(serverUrl) for the mobile environment
+Please edit the constant IP address(serverUrl) before running it, or simply refer to this project as an example
 
-// TODO : Add the Flutter Github link here
 <br><br><br>
 
 ## YouTube
 
-// TODO : Add YouTube link here later
+- [YouTube](https://www.youtube.com/watch?v=9e3alP88V7A)
 
-- [YouTube](https://docs.flutter.dev/get-started/codelab)
-  <br>It's not ready yet<br><br><br>
+## Flutter Mobile Github Repository
+
+- [Flutter Social Media V1](https://github.com/StephenLeeDev/FlutterSocialMediaV1)
+  <br>
 
 ## Authentication
 
