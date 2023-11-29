@@ -1,73 +1,68 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# NestJS Social Media V1
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+This is a Social Media project that is researching best practices in NestJS development
+<br>I took inspiration from the features of YouTube and Instagram
+<br><br>(Work in progress; Direct messaging feature not yet implemented)
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+- REST API
+- Swagger Document
+- Postgres
+- Image Uploading (Multipart)
 
-## Description
+- Authenication
+- Feed
+- Comments/Replies
+- Follow
+- Search Users
+- REST API integration
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Warning
 
-## Installation
+This project may not work directly on your computer because I've set a constant IP address(serverUrl) for the mobile environment
+Please edit the constant IP address(serverUrl) before running it, or simply refer to this project as an example
 
-```bash
-$ npm install
-```
+<br><br><br>
 
-## Running the app
+## YouTube
 
-```bash
-# development
-$ npm run start
+- [YouTube](https://www.youtube.com/watch?v=9e3alP88V7A)
 
-# watch mode
-$ npm run start:dev
+## Flutter Mobile Github Repository
 
-# production mode
-$ npm run start:prod
-```
+- [Flutter Social Media V1](https://github.com/StephenLeeDev/FlutterSocialMediaV1)
+  <br>
 
-## Test
+## Authentication
 
-```bash
-# unit tests
-$ npm run test
+<img src="https://github.com/StephenLeeDev/NestjsSocialMediaV1/assets/57079969/2cf0f70d-b6fa-4d38-b0a5-6fc98e9b70ab" alt="Authentication">
+<br><br><br>
 
-# e2e tests
-$ npm run test:e2e
+## User
 
-# test coverage
-$ npm run test:cov
-```
+<img src="https://github.com/StephenLeeDev/NestjsSocialMediaV1/assets/57079969/74164403-850d-4e8e-a07e-deaf4745fcd2" alt="User">
+<br><br><br>
 
-## Support
+## Post
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+<img src="https://github.com/StephenLeeDev/NestjsSocialMediaV1/assets/57079969/e3014429-30d3-4ed1-a5a7-9c617f4a9277" alt="Post">
+<br><br><br>
 
-## Stay in touch
+## Comment
 
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+<img src="https://github.com/StephenLeeDev/NestjsSocialMediaV1/assets/57079969/1d2eab12-f730-4c11-82c5-389163fa9106" alt="Comment">
+<br><br><br>
 
-## License
+## Chat
 
-Nest is [MIT licensed](LICENSE).
+<img src="https://github.com/StephenLeeDev/NestjsSocialMediaV1/assets/57079969/241a9cc8-7811-4b82-9247-623b8806f7ef" alt="Chat">
+<br><br><br>
+
+## Message
+
+<img src="https://github.com/StephenLeeDev/NestjsSocialMediaV1/assets/57079969/11e6b5dd-5f32-4515-abc9-d8a20131648e" alt="Message">
+<br><br><br>
+
+## Follow
+
+<img src="https://github.com/StephenLeeDev/NestjsSocialMediaV1/assets/57079969/d65f2159-463b-43cc-9787-daef91644e1a" alt="Follow">
+<br><br><br>
