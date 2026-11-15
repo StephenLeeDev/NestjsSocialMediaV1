@@ -1,9 +1,18 @@
+/**
+ * ============================================================================
+ *  CommentController: HTTP endpoints for comments (/comment/...)
+ * ============================================================================
+ *
+ * Responsibility: HTTP only (routes, parsing, Swagger). Every rule lives in
+ * CommentService. All routes require a signed-in user.
+ *
+ * Route order matters: `/reply` and `/test/dummy` are declared before `/:id`.
+ */
 import {
   Body,
   Controller,
   Delete,
   Get,
-  Logger,
   Param,
   ParseIntPipe,
   Patch,
@@ -21,122 +30,100 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { CommentInfoDto, CommentInfoListDto } from './dto/comment-info.dto';
-import { CreateCommentDto } from './dto/create-comment.dto';
 import { GetUser } from '../auth/get-user.decorator';
 import { User } from '../user/user.entity';
 import { CommentService } from './comment.service';
-import { UpdateCommentDto } from './dto/update-comment.dto';
+import { CommentInfoDto, CommentInfoListDto } from './dto/comment-info.dto';
+import { CreateCommentDto } from './dto/create-comment.dto';
 import { CreateDummyCommentDto } from './dto/create-dummy-comment.dto';
+import { UpdateCommentDto } from './dto/update-comment.dto';
+
+/** Shared Swagger descriptions for the paging query parameters. */
+const PostIdQuery = () =>
+  ApiQuery({ name: 'postId', description: `The post's ID`, required: true });
+const PageQuery = () =>
+  ApiQuery({
+    name: 'page',
+    description: `1-based page number`,
+    required: true,
+  });
+const LimitQuery = () =>
+  ApiQuery({ name: 'limit', description: `Comments per page`, required: true });
 
 @ApiTags('COMMENT')
 @UseGuards(AuthGuard())
 @ApiBearerAuth('Secret1234')
 @Controller('comment')
 export class CommentController {
-  private logger = new Logger('CommentController');
+  constructor(private readonly commentService: CommentService) {}
 
-  constructor(private commentService: CommentService) {}
-
-  @ApiResponse({
-    type: CommentInfoDto,
-    status: 201,
-    description: 'Success',
+  @ApiOperation({
+    summary: `Write a comment on a post, or a reply to a top-level comment`,
   })
   @ApiBody({ type: CreateCommentDto })
-  @ApiOperation({
-    summary: `Create comments or relies. A Comment represents a comment on a post, while a Reply represents a comment on a Comment.`,
-  })
+  @ApiResponse({ type: CommentInfoDto, status: 201, description: 'Created' })
   @Post('/')
   createComment(
-    // The REQUEST body is a CreateCommentDto (what the client sends).
-    // It used to be typed as CommentInfoDto, which is the RESPONSE shape and
-    // requires server-generated fields (user, createdAt, ...). With validation
-    // active, that would have rejected every valid request.
     @Body() createCommentDto: CreateCommentDto,
     @GetUser() user: User,
   ): Promise<CommentInfoDto> {
     return this.commentService.createComment(createCommentDto, user);
   }
 
+  @ApiOperation({ summary: `The top-level comments of a post, newest first` })
+  @PostIdQuery()
+  @PageQuery()
+  @LimitQuery()
   @ApiResponse({
     type: CommentInfoListDto,
     status: 200,
     description: 'Success',
   })
-  @ApiQuery({
-    name: 'postId',
-    description: `The post's ID`,
-    required: true,
-  })
-  @ApiQuery({
-    name: 'page',
-    description: `The page's number to call`,
-    required: true,
-  })
-  @ApiQuery({
-    name: 'limit',
-    description: `The number of items on a single page`,
-    required: true,
-  })
-  @ApiOperation({ summary: `Get comments list of the post` })
   @Get('/')
-  getCommentList(
+  getComments(
+    @GetUser() user: User,
+    // ParseIntPipe turns "3" into 3 and answers 400 for non-numbers.
     @Query('postId', ParseIntPipe) postId: number,
     @Query('page', ParseIntPipe) page: number,
     @Query('limit', ParseIntPipe) limit: number,
   ): Promise<CommentInfoListDto> {
-    return this.commentService.getCommentList(postId, page, limit);
+    return this.commentService.getComments(postId, user.email, page, limit);
   }
 
+  @ApiOperation({ summary: `The replies to a comment, newest first` })
+  @ApiQuery({
+    name: 'parentCommentId',
+    description: `The comment whose replies are listed`,
+    required: true,
+  })
+  @PostIdQuery()
+  @PageQuery()
+  @LimitQuery()
   @ApiResponse({
     type: CommentInfoListDto,
     status: 200,
     description: 'Success',
   })
-  @ApiQuery({
-    name: 'parentCommentId',
-    description: `The parent comment's ID`,
-    required: true,
-  })
-  @ApiQuery({
-    name: 'postId',
-    description: `The post's ID`,
-    required: true,
-  })
-  @ApiQuery({
-    name: 'page',
-    description: `The page's number to call`,
-    required: true,
-  })
-  @ApiQuery({
-    name: 'limit',
-    description: `The number of items on a single page`,
-    required: true,
-  })
-  @ApiOperation({ summary: `Get reply list of the parent comment` })
   @Get('/reply')
-  getReplyListByParentCommentId(
+  getReplies(
+    @GetUser() user: User,
     @Query('parentCommentId', ParseIntPipe) parentCommentId: number,
     @Query('postId', ParseIntPipe) postId: number,
     @Query('page', ParseIntPipe) page: number,
     @Query('limit', ParseIntPipe) limit: number,
   ): Promise<CommentInfoListDto> {
-    return this.commentService.getReplyListByParentCommentId(
+    return this.commentService.getReplies(
       parentCommentId,
       postId,
+      user.email,
       page,
       limit,
     );
   }
 
-  @ApiResponse({
-    type: CommentInfoDto,
-    status: 200,
-    description: 'Success',
-  })
+  @ApiOperation({ summary: `Edit your own comment` })
   @ApiBody({ type: UpdateCommentDto })
-  @ApiOperation({ summary: `Update the comment's content` })
+  @ApiResponse({ type: CommentInfoDto, status: 200, description: 'Success' })
   @Patch('/')
   updateComment(
     @Body() updateCommentDto: UpdateCommentDto,
@@ -145,39 +132,30 @@ export class CommentController {
     return this.commentService.updateComment(updateCommentDto, user);
   }
 
-  @ApiResponse({
-    status: 200,
-    description: 'Success',
+  @ApiOperation({
+    summary: `Create 10 dummy comments or replies (development only)`,
   })
-  @ApiParam({
-    name: 'id',
-    required: true,
-    description: 'The comment ID to delete',
-  })
-  @ApiOperation({ summary: `Delete the comment by ID` })
+  @ApiBody({ type: CreateDummyCommentDto })
+  @ApiResponse({ status: 201, description: 'Created' })
+  @Post('/test/dummy')
+  createDummyComments(
+    @Body() createDummyCommentDto: CreateDummyCommentDto,
+    @GetUser() user: User,
+  ): Promise<void> {
+    return this.commentService.createDummyComments(
+      createDummyCommentDto,
+      user.email,
+    );
+  }
+
+  @ApiOperation({ summary: `Delete your own comment (and its replies)` })
+  @ApiParam({ name: 'id', description: 'The comment ID to delete' })
+  @ApiResponse({ status: 200, description: 'Success' })
   @Delete('/:id')
   deleteComment(
     @Param('id', ParseIntPipe) id: number,
     @GetUser() user: User,
   ): Promise<void> {
     return this.commentService.deleteComment(id, user);
-  }
-
-  @ApiResponse({
-    status: 201,
-    description: 'Success',
-  })
-  @ApiBody({ type: CreateDummyCommentDto })
-  @ApiOperation({ summary: `Create 10 dummy comments or replies` })
-  @Post('/test/dummy')
-  createDummyComments(
-    @Body() createDummyCommentDto: CreateDummyCommentDto,
-  ): Promise<void> {
-    const commentInfoDto = new CommentInfoDto();
-    commentInfoDto.postId = createDummyCommentDto.postId;
-    commentInfoDto.parentCommentId = createDummyCommentDto.parentCommentId;
-    commentInfoDto.parentCommentAuthor =
-      createDummyCommentDto.parentCommentAuthor;
-    return this.commentService.createDummyComments(commentInfoDto);
   }
 }

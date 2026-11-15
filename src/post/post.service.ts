@@ -39,11 +39,8 @@ import { CreatePostDto } from './dto/create-post.dto';
 import { PostInfoDto, PostResponse } from './dto/post-info.dto';
 import { PostLikeCountDto } from './dto/post-like-count.dto';
 import { UpdatePostDescriptionDto } from './dto/update-post-description.dto';
-import {
-  randomDummyImageSets,
-  randomSentence,
-  shuffle,
-} from './dummy/dummy-post-data';
+import { randomSentence, shuffle } from '../common/utils/random.util';
+import { randomDummyImageSets } from './dummy/dummy-post-data';
 import { PostStatus } from './post-status.enum';
 import { PostEntity } from './post.entity';
 import { toPostInfoDto } from './post.mapper';
@@ -150,14 +147,33 @@ export class PostService {
   }
 
   /**
-   * A single post.
+   * A single post, as an API response.
    *
-   * PRIVATE posts are visible to their author only. For everybody else they
-   * behave as if they did not exist (404), so their existence is not revealed.
+   * @throws NotFoundException (404) when the post does not exist or is hidden
+   *         from the viewer (see getVisiblePostEntity).
+   */
+  async getPost(id: number, viewerEmail: string): Promise<PostInfoDto> {
+    const post = await this.getVisiblePostEntity(id, viewerEmail);
+    return toPostInfoDto(post, viewerEmail);
+  }
+
+  /**
+   * Loads a post the viewer is allowed to see, as an ENTITY (not a response).
+   *
+   * THE visibility rule for posts lives here, and only here:
+   *   PRIVATE posts are visible to their author only. For everybody else they
+   *   behave as if they did not exist (404), so their existence is not revealed.
+   *
+   * Public because other modules need the same rule: CommentService calls it
+   * so that comments of a hidden post are hidden too. (PostModule exports
+   * PostService for that reason.)
    *
    * @throws NotFoundException (404) when the post does not exist or is hidden.
    */
-  async getPost(id: number, viewerEmail: string): Promise<PostInfoDto> {
+  async getVisiblePostEntity(
+    id: number,
+    viewerEmail: string,
+  ): Promise<PostEntity> {
     const post = await this.findPostOrFail(id);
 
     const isAuthor = post.user.email === viewerEmail;
@@ -165,7 +181,7 @@ export class PostService {
       throw this.postNotFound(id);
     }
 
-    return toPostInfoDto(post, viewerEmail);
+    return post;
   }
 
   // ==========================================================================
@@ -295,7 +311,7 @@ export class PostService {
     // existed.)
     for (const [index, author] of authors.entries()) {
       const dto = new CreatePostDto();
-      dto.description = randomSentence();
+      dto.description = randomSentence(3, 22);
       await this.createPost(dto, author, imageSets[index]);
     }
   }

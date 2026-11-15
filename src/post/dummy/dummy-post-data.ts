@@ -4,73 +4,20 @@
  * ============================================================================
  *
  * POST /post/test/dummy fills the database with sample posts so the app has
- * something to show during development. These helpers produce the random
- * sentences and image sets for those posts.
- *
- * They used to be nested functions inside PostService.createDummyPosts.
- * Moving them here keeps the service focused on the actual rules, and makes
- * the randomness easy to read on its own.
+ * something to show during development. This file decides which bundled
+ * images each dummy post gets. (Random sentences and shuffling are shared
+ * with dummy comments and live in common/utils/random.util.ts.)
  *
  * The images are the bundled files `static/images/dummy/1.jpeg` ... `20.jpeg`.
  */
 import { publicImageUrl } from '../../common/utils/image-url.util';
+import { shuffle } from '../../common/utils/random.util';
 
 /** How many bundled dummy images exist (static/images/dummy/1..N.jpeg). */
 const DUMMY_IMAGE_COUNT = 20;
 
 /** The most images a single dummy post gets. */
 const MAX_IMAGES_PER_POST = 3;
-
-/** Words used to build "Lorem ipsum"-style placeholder sentences. */
-const LOREM_WORDS = [
-  'Lorem',
-  'ipsum',
-  'dolor',
-  'sit',
-  'amet',
-  'consectetur',
-  'adipiscing',
-  'elit',
-  'sed',
-  'do',
-  'eiusmod',
-  'tempor',
-  'incididunt',
-  'ut',
-  'labore',
-  'et',
-  'dolore',
-  'magna',
-  'aliqua',
-];
-
-/**
- * Returns a copy of `items` in random order (Fisher–Yates shuffle).
- * The original array is not modified.
- */
-export function shuffle<T>(items: readonly T[]): T[] {
-  const result = [...items];
-  // Walk backwards and swap each element with a random earlier (or same) one.
-  // This gives every possible order the same probability.
-  for (let i = result.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [result[i], result[j]] = [result[j], result[i]];
-  }
-  return result;
-}
-
-/**
- * Builds a random placeholder sentence of 3 to 22 words, ending with a period.
- * Example: "dolor ut magna Lorem elit."
- */
-export function randomSentence(): string {
-  const wordCount = Math.floor(Math.random() * 20) + 3;
-  const words = Array.from(
-    { length: wordCount },
-    () => LOREM_WORDS[Math.floor(Math.random() * LOREM_WORDS.length)],
-  );
-  return `${words.join(' ')}.`;
-}
 
 /**
  * Distributes the bundled dummy images over `postCount` posts.

@@ -22,6 +22,9 @@ import { UserRepository } from '../user/user.repository';
     }),
   ],
   controllers: [PostController],
+  // Other modules may use PostService (e.g. CommentService checks that a post
+  // is visible to the viewer before showing or accepting its comments).
+  exports: [PostService],
   providers: [
     PostService,
     PostRepository,

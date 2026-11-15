@@ -1,21 +1,27 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsInt, IsOptional } from 'class-validator';
 
+/**
+ * Request body of POST /comment/test/dummy (development helper).
+ *
+ * Creates 10 random comments on a post, or 10 random replies to one comment
+ * when `parentCommentId` is given. The same rules as for real comments apply
+ * (see CreateCommentDto and CommentService).
+ */
 export class CreateDummyCommentDto {
   @ApiProperty({
     example: 1,
-    description: `The ID of the post for this comment.`,
+    description: `The post to fill with dummy comments.`,
   })
-  @IsNotEmpty()
+  @IsInt()
   postId: number;
 
-  @ApiProperty({
-    description: `The ID of the parent comment for this reply. It can be null.`,
+  @ApiPropertyOptional({
+    example: 7,
+    nullable: true,
+    description: `When given, dummy REPLIES are created under this top-level comment.`,
   })
-  parentCommentId: number;
-
-  @ApiProperty({
-    description: `The email of the parent comment's author for this reply. It can be null.`,
-  })
-  parentCommentAuthor: string;
+  @IsOptional()
+  @IsInt()
+  parentCommentId?: number | null;
 }
