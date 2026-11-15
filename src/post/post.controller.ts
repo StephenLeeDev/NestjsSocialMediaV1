@@ -6,7 +6,7 @@ import { GetUser } from '../auth/get-user.decorator';
 import { User } from '../user/user.entity';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express';
-import { editFileName, imageFileFilter } from "../lib/multerOptions";
+import { editFileName, imageFileFilter, uploadDestination } from "../lib/multerOptions";
 import { diskStorage } from 'multer';
 import { ConfigService } from '@nestjs/config';
 import { PostInfoDto, PostResponse } from './dto/post-info.dto';
@@ -46,7 +46,7 @@ export class PostController {
     @ApiOperation({ summary: 'Create a new post' })
     @UseInterceptors(FilesInterceptor("files", 4, {
       storage: diskStorage({
-        destination: `./static/images`,
+        destination: uploadDestination,
         filename: editFileName
       }),
       fileFilter: imageFileFilter

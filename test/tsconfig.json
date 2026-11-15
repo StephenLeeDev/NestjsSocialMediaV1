@@ -1,0 +1,18 @@
+// TypeScript settings used by ts-jest when compiling the e2e tests.
+// (tsconfig files allow comments, unlike regular JSON files.)
+{
+  // Reuse every compiler option of the app so tests compile the source code
+  // exactly the same way the real build does (decorators, module system, ...).
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    // The root tsconfig limits `rootDir` to `src/`. Tests live in `test/` and
+    // import from `src/`, so the root of this compilation is the repository root.
+    "rootDir": "..",
+    // ts-jest compiles in memory; nothing should ever be written to `dist/`.
+    "noEmit": true,
+    // Global type definitions for `describe`, `it`, `expect` (jest) and Node APIs.
+    "types": ["jest", "node"]
+  },
+  // Compile the app sources and the test files together.
+  "include": ["../src/**/*", "./**/*"]
+}
