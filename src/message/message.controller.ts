@@ -4,8 +4,8 @@ import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } 
 import { MessageService } from './message.service';
 import { MessageInfoDto, MessageInfoListDto } from './dto/message-info.dto';
 import { CreateMessageDto } from './dto/create-message.dto';
-import { GetUser } from 'src/auth/get-user.decorator';
-import { User } from 'src/user/user.entity';
+import { GetUser } from '../auth/get-user.decorator';
+import { User } from '../user/user.entity';
 
 @ApiTags('MESSAGE')
 @UseGuards(AuthGuard())

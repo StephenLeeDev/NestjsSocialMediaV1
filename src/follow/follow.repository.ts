@@ -1,12 +1,16 @@
-import { EntityRepository, Repository } from "typeorm";
+import { DataSource, Repository } from "typeorm";
 import { Follow } from "./follow.entity";
-import { Logger } from "@nestjs/common";
-import { User } from "src/user/user.entity";
+import { Injectable, Logger } from "@nestjs/common";
+import { User } from "../user/user.entity";
 import { UserListDto } from "../user/dto/user-list.dto";
-import { UserSimpleInfoIncludingStatusMessageDto } from "src/user/dto/user-simple-info-including-status-message.dto";
+import { UserSimpleInfoIncludingStatusMessageDto } from "../user/dto/user-simple-info-including-status-message.dto";
 
-@EntityRepository(Follow)
+@Injectable()
 export class FollowRepository extends Repository<Follow> {
+
+    constructor(dataSource: DataSource) {
+        super(Follow, dataSource.createEntityManager());
+    }
 
     private logger = new Logger('FollowRepository');
 

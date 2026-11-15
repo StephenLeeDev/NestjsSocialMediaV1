@@ -2,23 +2,19 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PostStatus } from './post-status.enum';
 import { CreatePostDto } from './dto/create-post.dto';
 import { PostRepository } from './post.repository';
-import { InjectRepository } from '@nestjs/typeorm';
-import { User } from 'src/user/user.entity';
+import { User } from '../user/user.entity';
 import { PostInfoDto, PostResponse } from './dto/post-info.dto';
-import { UserInfoDto } from 'src/user/dto/user-info.dto';
-import { AuthRepository } from 'src/auth/auth.repository';
-import { UserRepository } from 'src/user/user.repository';
+import { UserInfoDto } from '../user/dto/user-info.dto';
+import { AuthRepository } from '../auth/auth.repository';
+import { UserRepository } from '../user/user.repository';
 import { PostLikeCountDto } from './dto/post-like-count.dto';
 import { UpdatePostDescriptionDto } from './dto/update-post-description.dto';
 
 @Injectable()
 export class PostService {
     constructor(
-        @InjectRepository(PostRepository)
         private postRepository: PostRepository,
-        @InjectRepository(UserRepository)
         private userRepository: UserRepository,
-        @InjectRepository(AuthRepository)
         private authRepository: AuthRepository,
     ) { }
 
@@ -60,8 +56,6 @@ export class PostService {
         const post = await this.postRepository
             .createQueryBuilder('post')
             .leftJoinAndSelect('post.user', 'user')
-            .leftJoin('post.comments', 'comment_entity')
-            .loadRelationCountAndMap('post.commentCount', 'post.comments')
             .where('post.id = :id', { id })
             .select([
                 'post.id',
@@ -74,16 +68,14 @@ export class PostService {
                 'user.username',
                 'user.email',
                 'user.thumbnail',
-                'COUNT(comment_entity.id) as commentCount',
             ])
-            .groupBy('post.id')
-            .addGroupBy('user.email')
             .getOne();
       
         if (!post) {
             this.logger.error(`Can't find Post with id ${id}`);
             throw new NotFoundException(`Can't find Post with id ${id}`);
         }
+        await this.postRepository.attachCommentCounts([post]);
       
         const postInfo: PostInfoDto = new PostInfoDto();
         postInfo.id = post.id;
@@ -144,7 +136,7 @@ export class PostService {
     async createDummyPosts(email?: string): Promise<void> {
 
         const count = 10;
-        const user = await this.userRepository.findOne({ email });
+        const user = await this.userRepository.findOneBy({ email });
 
         let users = [];
         let duplicatedUsers = [];

@@ -1,35 +1,41 @@
-import { EntityRepository, Repository } from "typeorm";
+import { DataSource, Repository } from "typeorm";
 import { User } from "./user.entity";
 import { UserInfoDto } from "./dto/user-info.dto";
-import { NotFoundException } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { Follow } from "../follow/follow.entity";
 import { bookMarksDTO } from "./dto/book-marks.dto";
 import { UpdatedUserThumbnailDto } from "./dto/updated-user-thumbnail.dto";
-import { PostStatus } from "src/post/post-status.enum";
+import { PostStatus } from "../post/post-status.enum";
 import { UserListDto } from "./dto/user-list.dto";
 import { UserSimpleInfoIncludingStatusMessageDto } from "./dto/user-simple-info-including-status-message.dto";
 
-@EntityRepository(User)
+@Injectable()
 export class UserRepository extends Repository<User> {
-    
+
+    constructor(dataSource: DataSource) {
+        super(User, dataSource.createEntityManager());
+    }
+
     async getUserInfo(email: string): Promise<UserInfoDto> {
         
         const user = await this
             .createQueryBuilder('user')
             .where('user.email = :email', { email })
-            .leftJoin('user.followings', 'follow')
-            .loadRelationCountAndMap('user.followerCount', 'user.followers')
-            .loadRelationCountAndMap('user.followingCount', 'user.followings')
             .select([
                 'user.email',
                 'user.username',
                 'user.thumbnail',
                 'user.bookMarks',
                 'user.statusMessage',
-                'COUNT(follow.id) AS followerCount',
-                'COUNT(follow.id) AS followingCount',
             ])
-            .groupBy('user.email')
             .getOne();
+
+        // `loadRelationCountAndMap` was removed in TypeORM 1.0, so count follows explicitly.
+        const followRepository = this.manager.getRepository(Follow);
+        const [followerCount, followingCount] = await Promise.all([
+            followRepository.countBy({ following: { email } }),
+            followRepository.countBy({ follower: { email } }),
+        ]);
         
         const post = this
             .createQueryBuilder('user')
@@ -47,8 +53,8 @@ export class UserRepository extends Repository<User> {
             userInfo.bookMarks = user.bookMarks;
             userInfo.statusMessage = user.statusMessage;
             userInfo.totalPostCount = isNaN(parseInt(totalPostCount, 10)) ? 0 : parseInt(totalPostCount, 10);
-            userInfo.followerCount = user.followerCount;
-            userInfo.followingCount = user.followingCount;
+            userInfo.followerCount = followerCount;
+            userInfo.followingCount = followingCount;
             return userInfo;
         } else {
             throw new NotFoundException(`User not found`);
@@ -57,7 +63,7 @@ export class UserRepository extends Repository<User> {
     }
 
     async postBookMark(email: string, postId: number): Promise<bookMarksDTO> {
-        const user = await this.findOne({ email });
+        const user = await this.findOneBy({ email });
     
         if (!user) {
           throw new Error('User not found');
@@ -80,7 +86,7 @@ export class UserRepository extends Repository<User> {
     }
     
     async updateUserThumbnail(email: string, newThumbnailUrl: string): Promise<UpdatedUserThumbnailDto> {
-        const user = await this.findOne({ email });
+        const user = await this.findOneBy({ email });
     
         if (!user) {
           throw new Error('User not found');
@@ -110,7 +116,7 @@ export class UserRepository extends Repository<User> {
         email: string,
         newStatusMessage: string,
     ): Promise<void> {
-        const user = await this.findOne({ email });
+        const user = await this.findOneBy({ email });
     
         if (user) {
             /// Update user status message

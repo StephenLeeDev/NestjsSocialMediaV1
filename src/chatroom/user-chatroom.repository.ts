@@ -1,12 +1,17 @@
-import { EntityRepository, Repository } from "typeorm";
+import { Injectable } from "@nestjs/common";
+import { DataSource, Repository } from "typeorm";
 import { UserChatRoomEntity } from "./user-chatroom.entity";
-import { User } from "src/user/user.entity";
+import { User } from "../user/user.entity";
 import { ChatRoomEntity } from "./chatroom.entity";
 import { ChatRoomDto, ChatRoomListDto } from "./dto/chatroom.dto";
-import { MessageEntity } from "src/message/message.entity";
+import { MessageEntity } from "../message/message.entity";
 
-@EntityRepository(UserChatRoomEntity)
+@Injectable()
 export class UserChatRoomRepository extends Repository<UserChatRoomEntity> {
+
+    constructor(dataSource: DataSource) {
+        super(UserChatRoomEntity, dataSource.createEntityManager());
+    }
 
     async findChatRoomByParticipants(sender: User, receiver: User): Promise<ChatRoomEntity | null> {
         

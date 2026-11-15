@@ -1,10 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
 import { UserRepository } from './user.repository';
 import { UserInfoDto } from './dto/user-info.dto';
-import { PostRepository } from 'src/post/post.repository';
+import { PostRepository } from '../post/post.repository';
 import { UpdatedUserThumbnailDto } from './dto/updated-user-thumbnail.dto';
-import { FollowRepository } from 'src/follow/follow.repository';
+import { FollowRepository } from '../follow/follow.repository';
 import { UserInfoIncludingIsFollowingDto } from './dto/user-info-including-isfollowing.dto';
 import { UserListDto } from './dto/user-list.dto';
 import { User } from './user.entity';
@@ -12,11 +11,8 @@ import { User } from './user.entity';
 @Injectable()
 export class UserService {
     constructor(
-        @InjectRepository(UserRepository)
         private userRepository: UserRepository,
-        @InjectRepository(PostRepository)
         private postRepository: PostRepository,
-        @InjectRepository(FollowRepository)
         private followRepository: FollowRepository,
     ) {}
 

@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import { ChatRoomEntity } from '../chatroom/chatroom.entity';
-import { User } from 'src/user/user.entity';
+import { User } from '../user/user.entity';
 import { MessageType } from './message-type';
 
 @Entity('messages')

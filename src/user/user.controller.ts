@@ -3,17 +3,16 @@ import { UserService } from './user.service';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { UserInfoDto } from './dto/user-info.dto';
-import { GetUser } from 'src/auth/get-user.decorator';
+import { GetUser } from '../auth/get-user.decorator';
 import { User } from './user.entity';
-import { ApiImplicitFile } from '@nestjs/swagger/dist/decorators/api-implicit-file.decorator';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { editFileName, imageFileFilter } from 'src/lib/multerOptions';
+import { editFileName, imageFileFilter } from '../lib/multerOptions';
 import { UpdatedUserThumbnailDto } from './dto/updated-user-thumbnail.dto';
 import { ConfigService } from '@nestjs/config';
 import { UserInfoIncludingIsFollowingDto } from './dto/user-info-including-isfollowing.dto';
 import { UserListDto } from './dto/user-list.dto';
-import { PostIdDto } from 'src/post/dto/post-id.dto';
+import { PostIdDto } from '../post/dto/post-id.dto';
 import { StatusMessageDto } from './dto/status-message.dto';
 
 @ApiTags('USER')
@@ -88,7 +87,13 @@ export class UserController {
         description: 'Success',
     })
     @ApiConsumes('multipart/form-data')
-    @ApiImplicitFile({ name: 'file', description: `User thumnail`, required: true })
+    @ApiBody({
+        schema: {
+            type: 'object',
+            required: ['file'],
+            properties: { file: { type: 'string', format: 'binary', description: 'User thumbnail' } },
+        },
+    })
     @ApiOperation({ summary: 'Update user thumbnail' })
     @UseInterceptors(
         FileInterceptor('file', {

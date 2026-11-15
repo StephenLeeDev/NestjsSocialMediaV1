@@ -1,26 +1,17 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { AuthModule } from 'src/auth/auth.module';
+import { AuthModule } from '../auth/auth.module';
 import { CommentController } from './comment.controller';
 import { CommentService } from './comment.service';
-import { CommentRepository } from 'src/comment/comment.repository';
-import { CommentEntity } from 'src/comment/comment.entity';
-import { PostRepository } from 'src/post/post.repository';
-import { UserRepository } from 'src/user/user.repository';
-import { AuthRepository } from 'src/auth/auth.repository';
+import { CommentRepository } from './comment.repository';
+import { PostRepository } from '../post/post.repository';
+import { UserRepository } from '../user/user.repository';
+import { AuthRepository } from '../auth/auth.repository';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      PostRepository,
-      CommentRepository,
-      UserRepository,
-      CommentEntity,
-      AuthRepository
-    ]),
     AuthModule,
   ],
   controllers: [CommentController],
-  providers: [CommentService]
+  providers: [CommentService, PostRepository, CommentRepository, UserRepository, AuthRepository]
 })
 export class CommentModule {}

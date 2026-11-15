@@ -1,8 +1,8 @@
-import { MessageEntity } from "src/message/message.entity";
-import { Follow } from "src/follow/follow.entity";
-import { PostEntity } from "src/post/post.entity";
+import { MessageEntity } from "../message/message.entity";
+import { Follow } from "../follow/follow.entity";
+import { PostEntity } from "../post/post.entity";
 import { BaseEntity, Column, Entity, JoinColumn, OneToMany, Unique } from "typeorm";
-import { UserChatRoomEntity } from "src/chatroom/user-chatroom.entity";
+import { UserChatRoomEntity } from "../chatroom/user-chatroom.entity";
 
 const serverUrl = 'http://192.168.1.251:3001'
 
