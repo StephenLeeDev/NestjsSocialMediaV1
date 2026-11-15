@@ -11,6 +11,12 @@ import {
 import { PostStatus } from './post-status.enum';
 import { CommentEntity } from '../comment/comment.entity';
 
+/**
+ * A post row in the database (table "post_entity").
+ *
+ * This class describes how posts are STORED. What the API returns is a
+ * different shape (PostInfoDto), produced by post.mapper.ts.
+ */
 @Entity()
 export class PostEntity extends BaseEntity {
   @PrimaryGeneratedColumn()
@@ -45,15 +51,24 @@ export class PostEntity extends BaseEntity {
   @Column('text', { array: true, nullable: false })
   imageUrls: string[];
 
+  // Emails of the users who liked this post (a PostgreSQL text[] column).
   @Column('text', { array: true, nullable: false })
   likes: string[];
 
+  // Emails of the users who bookmarked this post.
   @Column('text', { array: true, nullable: false })
   bookMarkedUsers: string[];
 
-  @OneToMany(() => CommentEntity, (comment) => comment.post, { eager: true })
-  @JoinColumn([{ name: 'commentId', referencedColumnName: 'id' }])
+  // The comments and replies of this post (the other side of CommentEntity.post).
+  //
+  // Not `eager` anymore: eager loading fetched EVERY comment of the post on
+  // every lookup (e.g. each like), although no code reads this list. Comment
+  // counts are computed with one COUNT query in PostRepository instead.
+  // (The `@JoinColumn` that used to be here had no effect: the foreign key
+  // column lives on the comment side.) The database schema is unchanged.
+  @OneToMany(() => CommentEntity, (comment) => comment.post)
   comments: CommentEntity[];
 
-  commentCount: number;
+  // NOT a database column. Filled in by PostRepository.attachCommentCounts.
+  commentCount?: number;
 }

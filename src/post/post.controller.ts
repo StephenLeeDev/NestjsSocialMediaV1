@@ -1,9 +1,25 @@
+/**
+ * ============================================================================
+ *  PostController: HTTP endpoints for posts (/post/...)
+ * ============================================================================
+ *
+ * Responsibility: HTTP only.
+ *   - which URL + method maps to which action
+ *   - reading and converting request data (body, query, path, files)
+ *   - documenting the endpoint for Swagger (/api)
+ * Every decision about the data itself is delegated to PostService.
+ *
+ * All routes require a signed-in user (`@UseGuards(AuthGuard())`); `@GetUser()`
+ * gives the user that the JWT belongs to.
+ *
+ * Route order matters: fixed paths such as `/my` and `/user` are declared
+ * BEFORE `/:id`, otherwise "my" would be treated as an id.
+ */
 import {
   Body,
   Controller,
   Delete,
   Get,
-  Logger,
   Param,
   ParseIntPipe,
   Patch,
@@ -13,11 +29,8 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { PostService } from './post.service';
-import { CreatePostDto } from './dto/create-post.dto';
 import { AuthGuard } from '@nestjs/passport';
-import { GetUser } from '../auth/get-user.decorator';
-import { User } from '../user/user.entity';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -28,33 +41,50 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { FilesInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { GetUser } from '../auth/get-user.decorator';
+import { publicImageUrl } from '../common/utils/image-url.util';
 import {
   editFileName,
   imageFileFilter,
   uploadDestination,
 } from '../lib/multerOptions';
-import { diskStorage } from 'multer';
+import { User } from '../user/user.entity';
+import { CreatePostDto } from './dto/create-post.dto';
 import { PostInfoDto, PostResponse } from './dto/post-info.dto';
+import { PostIdDto } from './dto/post-id.dto';
 import { PostLikeCountDto } from './dto/post-like-count.dto';
 import { UpdatePostDescriptionDto } from './dto/update-post-description.dto';
-import { PostIdDto } from './dto/post-id.dto';
-import { publicImageUrl } from '../common/utils/image-url.util';
+import { PostService } from './post.service';
+
+/** The most images one post may have. */
+const MAX_IMAGES_PER_POST = 4;
+
+/**
+ * Swagger description of the `page` / `limit` query parameters, shared by all
+ * paginated endpoints so the wording stays identical.
+ */
+const PageQuery = () =>
+  ApiQuery({
+    name: 'page',
+    description: `1-based page number`,
+    required: true,
+  });
+const LimitQuery = () =>
+  ApiQuery({ name: 'limit', description: `Posts per page`, required: true });
 
 @ApiTags('POST')
 @UseGuards(AuthGuard())
 @ApiBearerAuth('Secret1234')
 @Controller('post')
 export class PostController {
-  private logger = new Logger('PostController');
+  constructor(private readonly postService: PostService) {}
 
-  constructor(private postService: PostService) {}
+  // ==========================================================================
+  //  POST /post: create a post with images
+  // ==========================================================================
 
-  @ApiResponse({
-    type: PostInfoDto,
-    status: 200,
-    description: 'Success',
-  })
+  @ApiOperation({ summary: 'Create a new post' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -65,14 +95,17 @@ export class PostController {
         files: {
           type: 'array',
           items: { type: 'string', format: 'binary' },
-          description: `Post's images (max 4)`,
+          description: `Post's images (1 to ${MAX_IMAGES_PER_POST}, jpg/jpeg/png)`,
         },
       },
     },
   })
-  @ApiOperation({ summary: 'Create a new post' })
+  @ApiResponse({ type: PostInfoDto, status: 201, description: 'Created' })
+  // Multer receives the uploaded files from the `files` form field, renames
+  // them and writes them to disk BEFORE the handler runs. If validation fails
+  // afterwards, NestJS deletes those files again automatically.
   @UseInterceptors(
-    FilesInterceptor('files', 4, {
+    FilesInterceptor('files', MAX_IMAGES_PER_POST, {
       storage: diskStorage({
         destination: uploadDestination,
         filename: editFileName,
@@ -84,185 +117,159 @@ export class PostController {
   createPost(
     @Body() createPostDto: CreatePostDto,
     @GetUser() user: User,
-    @UploadedFiles() files: Array<Express.Multer.File>,
+    // Undefined (not an empty list) when the request contains no files.
+    @UploadedFiles() files: Express.Multer.File[] = [],
   ): Promise<PostInfoDto> {
     return this.postService.createPost(
       createPostDto,
       user,
-      // Multer already saved the files; turn their new names into public URLs.
+      // Turn the saved files' new names into public URLs.
       files.map((file) => publicImageUrl(file.filename)),
     );
   }
 
-  @ApiResponse({
-    type: PostResponse,
-    status: 200,
-    description: 'Success',
-  })
-  @ApiQuery({
-    name: 'page',
-    description: `The page's number to call`,
-    required: true,
-  })
-  @ApiQuery({
-    name: 'limit',
-    description: `The number of items on a single page`,
-    required: true,
-  })
-  @ApiOperation({ summary: `Get post list` })
+  // ==========================================================================
+  //  Lists
+  // ==========================================================================
+
+  @ApiOperation({ summary: `The feed: everyone's public posts, newest first` })
+  @PageQuery()
+  @LimitQuery()
+  @ApiResponse({ type: PostResponse, status: 200, description: 'Success' })
   @Get('/')
-  getPostList(
+  getFeed(
+    @GetUser() user: User,
+    // ParseIntPipe turns "2" into 2 and answers 400 for non-numbers.
+    @Query('page', ParseIntPipe) page: number,
+    @Query('limit', ParseIntPipe) limit: number,
+  ): Promise<PostResponse> {
+    return this.postService.getFeed(user.email, page, limit);
+  }
+
+  @ApiOperation({ summary: `The signed-in user's public posts` })
+  @PageQuery()
+  @LimitQuery()
+  @ApiResponse({ type: PostResponse, status: 200, description: 'Success' })
+  @Get('/my')
+  getMyPosts(
     @GetUser() user: User,
     @Query('page', ParseIntPipe) page: number,
     @Query('limit', ParseIntPipe) limit: number,
   ): Promise<PostResponse> {
-    return this.postService.getPostList(user.email, page, limit);
+    // The viewer is also the author here.
+    return this.postService.getPostsByAuthor(
+      user.email,
+      user.email,
+      page,
+      limit,
+    );
   }
 
-  @ApiResponse({
-    status: 201,
-    description: 'Success',
+  @ApiOperation({ summary: `A user's public posts, by the user's email` })
+  @ApiQuery({
+    name: 'email',
+    description: `The author's email`,
+    required: true,
   })
-  @ApiOperation({ summary: `Update the post description` })
+  @PageQuery()
+  @LimitQuery()
+  @ApiResponse({ type: PostResponse, status: 200, description: 'Success' })
+  @Get('/user')
+  getPostsByAuthor(
+    @GetUser() user: User,
+    @Query('email') authorEmail: string,
+    @Query('page', ParseIntPipe) page: number,
+    @Query('limit', ParseIntPipe) limit: number,
+  ): Promise<PostResponse> {
+    return this.postService.getPostsByAuthor(
+      authorEmail,
+      user.email,
+      page,
+      limit,
+    );
+  }
+
+  // ==========================================================================
+  //  Update
+  // ==========================================================================
+
+  @ApiOperation({ summary: `Edit the description of your own post` })
+  @ApiResponse({ type: PostInfoDto, status: 200, description: 'Success' })
   @Patch('/description')
-  updatePostDescription(
+  updateDescription(
     @GetUser() user: User,
     @Body() updatePostDescriptionDto: UpdatePostDescriptionDto,
   ): Promise<PostInfoDto> {
-    return this.postService.updatePostDescription(
+    return this.postService.updateDescription(
       user.email,
       updatePostDescriptionDto,
     );
   }
 
-  @ApiResponse({
-    type: PostResponse,
-    status: 200,
-    description: 'Success',
-  })
-  @ApiQuery({
-    name: 'page',
-    description: `The page's number to call`,
-    required: true,
-  })
-  @ApiQuery({
-    name: 'limit',
-    description: `The number of items on a single page`,
-    required: true,
-  })
-  @ApiOperation({ summary: `Get my post list` })
-  @Get('/my')
-  getMyPostList(
-    @GetUser() user: User,
-    @Query('page', ParseIntPipe) page: number,
-    @Query('limit', ParseIntPipe) limit: number,
-  ): Promise<PostResponse> {
-    return this.postService.getPostListByUser(user.email, page, limit);
-  }
-
-  @ApiResponse({
-    type: PostResponse,
-    status: 200,
-    description: 'Success',
-  })
-  @ApiQuery({
-    name: 'email',
-    description: `The post's author to call`,
-    required: true,
-  })
-  @ApiQuery({
-    name: 'page',
-    description: `The page's number to call`,
-    required: true,
-  })
-  @ApiQuery({
-    name: 'limit',
-    description: `The number of items on a single page`,
-    required: true,
-  })
-  @ApiOperation({ summary: `Get user's post list by email` })
-  @Get('/user')
-  getPostListByUser(
-    @Query('email') email: string,
-    @Query('page', ParseIntPipe) page: number,
-    @Query('limit', ParseIntPipe) limit: number,
-  ): Promise<PostResponse> {
-    return this.postService.getPostListByUser(email, page, limit);
-  }
-
-  @ApiResponse({
-    type: PostLikeCountDto,
-    status: 201,
-    description: 'Success',
-  })
+  @ApiOperation({ summary: 'Like the post, or remove your like' })
   @ApiBody({ type: PostIdDto })
-  @ApiOperation({ summary: 'Add or remove a like to the post' })
+  @ApiResponse({ type: PostLikeCountDto, status: 201, description: 'Success' })
+  // NOTE: `:postId` in the path is NOT used; the id comes from the body
+  // (see PostIdDto). The Flutter app depends on this, so it stays for now.
   @Post('/:postId/like')
-  likePost(
+  toggleLike(
     @GetUser() user: User,
     @Body() postIdDto: PostIdDto,
   ): Promise<PostLikeCountDto> {
-    return this.postService.likeUnlikePost(postIdDto.postId, user.email);
+    return this.postService.toggleLike(postIdDto.postId, user.email);
   }
 
-  @ApiResponse({
-    type: PostInfoDto,
-    status: 200,
-    description: 'Success',
-  })
-  @ApiOperation({ summary: 'Get the post infomation by id' })
-  @Get('/:id')
-  getPostById(
+  @ApiOperation({ summary: `Switch your own post between PUBLIC and PRIVATE` })
+  @ApiParam({ name: 'id', description: 'The post ID' })
+  @ApiResponse({ status: 200, description: 'Success' })
+  @Patch('/:id/status')
+  togglePostStatus(
     @GetUser() user: User,
-    @Param('id') id: number,
-  ): Promise<PostInfoDto> {
-    return this.postService.getPostById(user.email, id);
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<void> {
+    return this.postService.togglePostStatus(id, user.email);
   }
 
-  @ApiResponse({
-    status: 200,
-    description: 'Success',
-  })
-  @ApiParam({
-    name: 'id',
-    required: true,
-    description: 'The post ID to delete',
-  })
+  // ==========================================================================
+  //  Single post
+  // ==========================================================================
+
+  @ApiOperation({ summary: 'Get one post by its ID' })
+  @ApiParam({ name: 'id', description: 'The post ID' })
+  @ApiResponse({ type: PostInfoDto, status: 200, description: 'Success' })
+  @Get('/:id')
+  getPost(
+    @GetUser() user: User,
+    // Without ParseIntPipe, "abc" reached the SQL query and caused a 500.
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<PostInfoDto> {
+    return this.postService.getPost(id, user.email);
+  }
+
+  @ApiOperation({ summary: 'Delete your own post (and its comments)' })
+  @ApiParam({ name: 'id', description: 'The post ID to delete' })
+  @ApiResponse({ status: 200, description: 'Success' })
   @Delete('/:id')
-  @ApiOperation({ summary: 'Delete the post by id' })
   deletePost(
-    @Param('id', ParseIntPipe) id,
+    @Param('id', ParseIntPipe) id: number,
     @GetUser() user: User,
   ): Promise<void> {
     return this.postService.deletePost(id, user);
   }
 
-  @ApiResponse({
-    status: 200,
-    description: 'Success',
-  })
-  @ApiOperation({ summary: `Modify the post status` })
-  @Patch('/:id/status')
-  updatePostStatus(
-    @GetUser() user: User,
-    @Param('id', ParseIntPipe) id: number,
-  ): Promise<void> {
-    return this.postService.updatePostStatus(user.email, id);
-  }
+  // ==========================================================================
+  //  Development helper
+  // ==========================================================================
 
-  @ApiResponse({
-    status: 201,
-    description: 'Success',
-  })
+  @ApiOperation({ summary: 'Create 10 dummy posts (development only)' })
   @ApiQuery({
     name: 'email',
-    description: `The email address of the writer of the dummy post; it can be null`,
-    required: true,
-    allowEmptyValue: true,
+    description: `Author of the dummy posts; when empty, random dummy users are used`,
+    required: false,
   })
-  @ApiOperation({ summary: 'Create 10 dummy posts' })
+  @ApiResponse({ status: 201, description: 'Created' })
   @Post('/test/dummy')
-  createDummyPosts(@Query('email') email: string): Promise<void> {
+  createDummyPosts(@Query('email') email?: string): Promise<void> {
     return this.postService.createDummyPosts(email);
   }
 }
