@@ -1,14 +1,14 @@
-import { User } from "../user/user.entity";
-import { Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { User } from '../user/user.entity';
+import { Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity()
 export class Follow {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => User, user => user.followings)
+  @ManyToOne(() => User, (user) => user.followings)
   follower: User;
 
-  @ManyToOne(() => User, user => user.followers)
+  @ManyToOne(() => User, (user) => user.followers)
   following: User;
 }

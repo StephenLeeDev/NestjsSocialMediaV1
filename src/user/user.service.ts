@@ -10,57 +10,84 @@ import { User } from './user.entity';
 
 @Injectable()
 export class UserService {
-    constructor(
-        private userRepository: UserRepository,
-        private postRepository: PostRepository,
-        private followRepository: FollowRepository,
-    ) {}
+  constructor(
+    private userRepository: UserRepository,
+    private postRepository: PostRepository,
+    private followRepository: FollowRepository,
+  ) {}
 
-    async getUserInfo(email: string): Promise<UserInfoDto> {
-        const userInfo = await this.userRepository.getUserInfo(email);
-        return userInfo;
-    }
+  async getUserInfo(email: string): Promise<UserInfoDto> {
+    const userInfo = await this.userRepository.getUserInfo(email);
+    return userInfo;
+  }
 
-    async getUserInfoByEmail(myEmail: string, userEmail: string): Promise<UserInfoIncludingIsFollowingDto> {
-        const userInfoIncludingIsFollowing = new UserInfoIncludingIsFollowingDto();
+  async getUserInfoByEmail(
+    myEmail: string,
+    userEmail: string,
+  ): Promise<UserInfoIncludingIsFollowingDto> {
+    const userInfoIncludingIsFollowing = new UserInfoIncludingIsFollowingDto();
 
-        const userInfo = await this.userRepository.getUserInfo(userEmail);
-        userInfoIncludingIsFollowing.email = userInfo.email
-        userInfoIncludingIsFollowing.username = userInfo.username
-        userInfoIncludingIsFollowing.thumbnail = userInfo.thumbnail
-        userInfoIncludingIsFollowing.bookMarks = userInfo.bookMarks
-        userInfoIncludingIsFollowing.statusMessage = userInfo.statusMessage
-        userInfoIncludingIsFollowing.totalPostCount = userInfo.totalPostCount
-        userInfoIncludingIsFollowing.followerCount = userInfo.followerCount
-        userInfoIncludingIsFollowing.followingCount = userInfo.followingCount
+    const userInfo = await this.userRepository.getUserInfo(userEmail);
+    userInfoIncludingIsFollowing.email = userInfo.email;
+    userInfoIncludingIsFollowing.username = userInfo.username;
+    userInfoIncludingIsFollowing.thumbnail = userInfo.thumbnail;
+    userInfoIncludingIsFollowing.bookMarks = userInfo.bookMarks;
+    userInfoIncludingIsFollowing.statusMessage = userInfo.statusMessage;
+    userInfoIncludingIsFollowing.totalPostCount = userInfo.totalPostCount;
+    userInfoIncludingIsFollowing.followerCount = userInfo.followerCount;
+    userInfoIncludingIsFollowing.followingCount = userInfo.followingCount;
 
-        const isFollowing = await this.followRepository.getIsFollowing(myEmail, userEmail);
-        userInfoIncludingIsFollowing.isFollowing = isFollowing;
+    const isFollowing = await this.followRepository.getIsFollowing(
+      myEmail,
+      userEmail,
+    );
+    userInfoIncludingIsFollowing.isFollowing = isFollowing;
 
-        return userInfoIncludingIsFollowing;
-    }
-    
-    async postBookMark(email: string, postId: number): Promise<void> {
-        const bookMarks = await this.userRepository.postBookMark(email, postId);
-        if (bookMarks) {
-            await this.postRepository.postBookMark(email, postId);
-        }
-    }
-    
-    async updateUserThumbnail(email: string, newThumbnailUrl: string): Promise<UpdatedUserThumbnailDto> {
-        return await this.userRepository.updateUserThumbnail(email, newThumbnailUrl);
-    }
-    
-    async deleteThumbnail(user: User): Promise<UpdatedUserThumbnailDto> {
-        return await this.userRepository.deleteThumbnail(user);
-    }
-    
-    async updateStatusMessage(email: string, newStatusMessage: string): Promise<void> {
-        return await this.userRepository.updateStatusMessage(email, newStatusMessage);
-    }
-    
-    async getUserListByKeyword(user: User, keyword: string, page: number, limit: number): Promise<UserListDto> {
-        return await this.userRepository.getUserListByKeyword(user, keyword, page, limit);
-    }
+    return userInfoIncludingIsFollowing;
+  }
 
+  async postBookMark(email: string, postId: number): Promise<void> {
+    const bookMarks = await this.userRepository.postBookMark(email, postId);
+    if (bookMarks) {
+      await this.postRepository.postBookMark(email, postId);
+    }
+  }
+
+  async updateUserThumbnail(
+    email: string,
+    newThumbnailUrl: string,
+  ): Promise<UpdatedUserThumbnailDto> {
+    return await this.userRepository.updateUserThumbnail(
+      email,
+      newThumbnailUrl,
+    );
+  }
+
+  async deleteThumbnail(user: User): Promise<UpdatedUserThumbnailDto> {
+    return await this.userRepository.deleteThumbnail(user);
+  }
+
+  async updateStatusMessage(
+    email: string,
+    newStatusMessage: string,
+  ): Promise<void> {
+    return await this.userRepository.updateStatusMessage(
+      email,
+      newStatusMessage,
+    );
+  }
+
+  async getUserListByKeyword(
+    user: User,
+    keyword: string,
+    page: number,
+    limit: number,
+  ): Promise<UserListDto> {
+    return await this.userRepository.getUserListByKeyword(
+      user,
+      keyword,
+      page,
+      limit,
+    );
+  }
 }

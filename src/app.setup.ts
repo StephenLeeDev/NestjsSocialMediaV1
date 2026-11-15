@@ -14,7 +14,11 @@
  *   global ValidationPipe), the tests pick it up automatically.
  */
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { DocumentBuilder, SwaggerCustomOptions, SwaggerModule } from '@nestjs/swagger';
+import {
+  DocumentBuilder,
+  SwaggerCustomOptions,
+  SwaggerModule,
+} from '@nestjs/swagger';
 import { join } from 'path';
 import { SocketIoAdapter } from './chatroom/socket-io.adapters';
 
@@ -22,7 +26,9 @@ import { SocketIoAdapter } from './chatroom/socket-io.adapters';
  * Applies the app-wide configuration and returns the same app instance,
  * so it can be used inline: `const app = configureApp(await NestFactory.create(...))`.
  */
-export function configureApp(app: NestExpressApplication): NestExpressApplication {
+export function configureApp(
+  app: NestExpressApplication,
+): NestExpressApplication {
   // -------------------------------------------------------------------------
   // Swagger (interactive API documentation) at http://<host>:<port>/api
   // -------------------------------------------------------------------------
@@ -41,7 +47,10 @@ export function configureApp(app: NestExpressApplication): NestExpressApplicatio
     // 'Secret1234' is only the NAME of this security scheme inside the Swagger
     // document (controllers refer to it with @ApiBearerAuth('Secret1234')).
     // It is not a secret and has nothing to do with the JWT signing key.
-    .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT', in: 'header' }, 'Secret1234')
+    .addBearerAuth(
+      { type: 'http', scheme: 'bearer', bearerFormat: 'JWT', in: 'header' },
+      'Secret1234',
+    )
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document, swaggerCustomOptions);

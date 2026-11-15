@@ -6,10 +6,8 @@ import { UserRepository } from '../user/user.repository';
 import { PassportModule } from '@nestjs/passport';
 
 @Module({
-  imports: [
-    PassportModule.register({ defaultStrategy: 'jwt' }),
-  ],
+  imports: [PassportModule.register({ defaultStrategy: 'jwt' })],
   controllers: [FollowController],
-  providers: [FollowService, UserRepository, FollowRepository]
+  providers: [FollowService, UserRepository, FollowRepository],
 })
 export class FollowModule {}

@@ -12,13 +12,19 @@ import { UserRepository } from '../user/user.repository';
   imports: [
     AuthModule,
     MulterModule.register({
-      dest: "./static/images",
+      dest: './static/images',
       limits: {
         fileSize: 1000000, // 1000kb
       },
     }),
   ],
   controllers: [PostController],
-  providers: [PostService, PostRepository, CommentRepository, UserRepository, AuthRepository]
+  providers: [
+    PostService,
+    PostRepository,
+    CommentRepository,
+    UserRepository,
+    AuthRepository,
+  ],
 })
 export class PostModule {}

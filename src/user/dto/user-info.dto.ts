@@ -1,7 +1,6 @@
-import { ApiProperty } from "@nestjs/swagger";
+import { ApiProperty } from '@nestjs/swagger';
 
 export class UserInfoDto {
-
   @ApiProperty({
     example: 'john@gmail.com',
     description: `User's email address`,
@@ -23,7 +22,7 @@ export class UserInfoDto {
   // TODO : Low priority
   // TODO : Refactor this field's type to number from array
   @ApiProperty({
-    example: [1,2],
+    example: [1, 2],
     description: `The list of post IDs that user has bookmarked`,
   })
   bookMarks: number[];
@@ -51,5 +50,4 @@ export class UserInfoDto {
     description: `The number of user's followings`,
   })
   followingCount: number;
-
 }

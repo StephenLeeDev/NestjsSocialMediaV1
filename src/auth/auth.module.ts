@@ -15,13 +15,18 @@ import { AuthRepository } from './auth.repository';
       useFactory: (configService: ConfigService) => ({
         secret: configService.getOrThrow<string>('JWT_SECRET'),
         signOptions: {
-          expiresIn: Number(configService.get<string>('JWT_EXPIRES_IN_SECONDS', String(60 * 60 * 365))),
+          expiresIn: Number(
+            configService.get<string>(
+              'JWT_EXPIRES_IN_SECONDS',
+              String(60 * 60 * 365),
+            ),
+          ),
         },
       }),
     }),
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, AuthRepository],
-  exports: [JwtStrategy, PassportModule]
+  exports: [JwtStrategy, PassportModule],
 })
 export class AuthModule {}

@@ -41,7 +41,11 @@ describe('Chat & Message (e2e)', () => {
   });
 
   it('POST /chat creates a room with the receiver as chat partner', async () => {
-    const res = await request(server).post('/chat').set(bearer(senderToken)).send({ email: 'receiver@gmail.com' }).expect(201);
+    const res = await request(server)
+      .post('/chat')
+      .set(bearer(senderToken))
+      .send({ email: 'receiver@gmail.com' })
+      .expect(201);
 
     roomId = res.body.id;
     expect(res.body).toMatchObject({
@@ -54,7 +58,11 @@ describe('Chat & Message (e2e)', () => {
 
   it('POST /chat returns the existing room for the same pair of users', async () => {
     // Opening a chat with the same person again must not create a second room.
-    const res = await request(server).post('/chat').set(bearer(senderToken)).send({ email: 'receiver@gmail.com' }).expect(201);
+    const res = await request(server)
+      .post('/chat')
+      .set(bearer(senderToken))
+      .send({ email: 'receiver@gmail.com' })
+      .expect(201);
 
     expect(res.body.id).toBe(roomId);
   });
@@ -68,7 +76,11 @@ describe('Chat & Message (e2e)', () => {
       .send({ chatRoomId: String(roomId), content: 'Hi there', type: 'TEXT' })
       .expect(201);
 
-    expect(res.body).toMatchObject({ content: 'Hi there', type: 'TEXT', sender: { email: 'sender@gmail.com' } });
+    expect(res.body).toMatchObject({
+      content: 'Hi there',
+      type: 'TEXT',
+      sender: { email: 'sender@gmail.com' },
+    });
   });
 
   it('GET /message lists the messages of the room', async () => {
@@ -84,10 +96,18 @@ describe('Chat & Message (e2e)', () => {
   });
 
   it("GET /chat lists the receiver's rooms with the latest message", async () => {
-    const res = await request(server).get('/chat').query({ page: 1, limit: 10 }).set(bearer(receiverToken)).expect(200);
+    const res = await request(server)
+      .get('/chat')
+      .query({ page: 1, limit: 10 })
+      .set(bearer(receiverToken))
+      .expect(200);
 
     expect(res.body.total).toBe(1);
     // For the receiver, the chat partner is the sender.
-    expect(res.body.list[0]).toMatchObject({ id: roomId, latestMessage: 'Hi there', chatPartner: { email: 'sender@gmail.com' } });
+    expect(res.body.list[0]).toMatchObject({
+      id: roomId,
+      latestMessage: 'Hi there',
+      chatPartner: { email: 'sender@gmail.com' },
+    });
   });
 });

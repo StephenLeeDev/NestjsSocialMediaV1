@@ -1,3 +1,3 @@
 export enum AuthSocialType {
-    GOOGLE = 'GOOGLE',
+  GOOGLE = 'GOOGLE',
 }

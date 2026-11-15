@@ -6,10 +6,8 @@ import { MessageRepository } from './message.repository';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [
-    AuthModule,
-  ],
+  imports: [AuthModule],
   controllers: [MessageController],
-  providers: [MessageService, ChatRoomRepository, MessageRepository]
+  providers: [MessageService, ChatRoomRepository, MessageRepository],
 })
 export class MessageModule {}
