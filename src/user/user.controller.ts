@@ -1,113 +1,126 @@
+/**
+ * ============================================================================
+ *  UserController: HTTP endpoints for users (/user/...)
+ * ============================================================================
+ *
+ * Responsibility: HTTP only (routes, parsing, file upload, Swagger). Every
+ * rule lives in UserService. All routes require a signed-in user; `@GetUser()`
+ * gives the User entity the JWT belongs to.
+ *
+ * Route order matters: fixed paths (`/thumbnail`, `/statusMessage`,
+ * `/search/users`, `/post/bookmark`) are matched before `/:userEmail` because
+ * they are more specific, but keep new fixed routes ABOVE `/:userEmail` anyway.
+ */
 import {
+  BadRequestException,
+  Body,
   Controller,
+  Delete,
   Get,
-  Logger,
+  Param,
   ParseIntPipe,
   Patch,
   Post,
   Query,
   UploadedFile,
-  Delete,
   UseGuards,
   UseInterceptors,
-  Body,
 } from '@nestjs/common';
-import { UserService } from './user.service';
+import { AuthGuard } from '@nestjs/passport';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
   ApiBody,
   ApiConsumes,
   ApiOperation,
+  ApiParam,
   ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { AuthGuard } from '@nestjs/passport';
-import { UserInfoDto } from './dto/user-info.dto';
-import { GetUser } from '../auth/get-user.decorator';
-import { User } from './user.entity';
-import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
+import { GetUser } from '../auth/get-user.decorator';
+import { publicImageUrl } from '../common/utils/image-url.util';
 import {
   editFileName,
   imageFileFilter,
   uploadDestination,
 } from '../lib/multerOptions';
-import { UpdatedUserThumbnailDto } from './dto/updated-user-thumbnail.dto';
-import { UserInfoIncludingIsFollowingDto } from './dto/user-info-including-isfollowing.dto';
-import { UserListDto } from './dto/user-list.dto';
 import { PostIdDto } from '../post/dto/post-id.dto';
 import { StatusMessageDto } from './dto/status-message.dto';
-import { publicImageUrl } from '../common/utils/image-url.util';
+import { UpdatedUserThumbnailDto } from './dto/updated-user-thumbnail.dto';
+import { UserInfoIncludingIsFollowingDto } from './dto/user-info-including-isfollowing.dto';
+import { UserInfoDto } from './dto/user-info.dto';
+import { UserListDto } from './dto/user-list.dto';
+import { User } from './user.entity';
+import { UserService } from './user.service';
 
 @ApiTags('USER')
 @UseGuards(AuthGuard())
 @ApiBearerAuth('Secret1234')
 @Controller('user')
 export class UserController {
-  private logger = new Logger('UserController');
+  constructor(private readonly userService: UserService) {}
 
-  constructor(private userService: UserService) {}
+  // ==========================================================================
+  //  Profiles
+  // ==========================================================================
 
-  /// Get my user information
-  @ApiResponse({
-    type: UserInfoDto,
-    status: 200,
-    description: 'Success',
-  })
-  @ApiOperation({ summary: `Get my infomation` })
+  @ApiOperation({ summary: `Your own profile (including your bookmarks)` })
+  @ApiResponse({ type: UserInfoDto, status: 200, description: 'Success' })
   @Get('/')
-  getMyInfo(@GetUser() user: User): Promise<UserInfoDto> {
-    this.logger.verbose(`User ${user.email} trying to get own infomation.`);
-
-    return this.userService.getUserInfo(user.email);
+  getMyProfile(@GetUser() user: User): Promise<UserInfoDto> {
+    return this.userService.getMyProfile(user);
   }
 
-  /// Get other user information
-  /// it's not for current user
-  /// If you want to get current user's information, use getMyInfo()
-  @ApiResponse({
-    type: UserInfoIncludingIsFollowingDto,
-    status: 200,
-    description: 'Success',
+  // ==========================================================================
+  //  Search
+  // ==========================================================================
+
+  @ApiOperation({ summary: `Find users whose username contains a keyword` })
+  @ApiQuery({
+    name: 'keyword',
+    description: `Text the username must contain (case-sensitive). Empty or missing = everyone.`,
+    required: false,
+    allowEmptyValue: true,
   })
   @ApiQuery({
-    name: 'userEmail',
-    description: `The user's email who you're trying look up`,
+    name: 'page',
+    description: `1-based page number`,
     required: true,
   })
-  @ApiOperation({
-    summary: `Get other user information. it's not for current user.`,
-  })
-  @Get('/:userEmail')
-  getUserInfoByEmail(
+  @ApiQuery({ name: 'limit', description: `Users per page`, required: true })
+  @ApiResponse({ type: UserListDto, status: 200, description: 'Success' })
+  @Get('/search/users')
+  searchUsers(
     @GetUser() user: User,
-    @Query('userEmail') userEmail: string,
-  ): Promise<UserInfoIncludingIsFollowingDto> {
-    return this.userService.getUserInfoByEmail(user.email, userEmail);
+    @Query('keyword') keyword: string | undefined,
+    @Query('page', ParseIntPipe) page: number,
+    @Query('limit', ParseIntPipe) limit: number,
+  ): Promise<UserListDto> {
+    return this.userService.searchUsers(user, keyword, page, limit);
   }
 
-  @ApiResponse({
-    status: 201,
-    description: 'Success',
-  })
+  // ==========================================================================
+  //  Bookmarks
+  // ==========================================================================
+
+  @ApiOperation({ summary: `Bookmark a post, or remove the bookmark` })
   @ApiBody({ type: PostIdDto })
-  @ApiOperation({
-    summary: `Bookmark the post if it hasn't been bookmarked yet, or remove the bookmark if it has already been bookmarked.`,
-  })
+  @ApiResponse({ status: 201, description: 'Success' })
   @Post('/post/bookmark')
-  postBookMark(
+  toggleBookmark(
     @GetUser() user: User,
     @Body() postIdDto: PostIdDto,
   ): Promise<void> {
-    return this.userService.postBookMark(user.email, postIdDto.postId);
+    return this.userService.toggleBookmark(user, postIdDto.postId);
   }
 
-  @ApiResponse({
-    type: UpdatedUserThumbnailDto,
-    status: 200,
-    description: 'Success',
-  })
+  // ==========================================================================
+  //  Profile picture and status message
+  // ==========================================================================
+
+  @ApiOperation({ summary: 'Upload a new profile picture' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -117,12 +130,18 @@ export class UserController {
         file: {
           type: 'string',
           format: 'binary',
-          description: 'User thumbnail',
+          description: 'The new profile picture (jpg/jpeg/png)',
         },
       },
     },
   })
-  @ApiOperation({ summary: 'Update user thumbnail' })
+  @ApiResponse({
+    type: UpdatedUserThumbnailDto,
+    status: 200,
+    description: 'Success',
+  })
+  // Multer receives the file from the `file` form field, renames it and
+  // writes it to disk before the handler runs.
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
@@ -133,73 +152,75 @@ export class UserController {
     }),
   )
   @Patch('thumbnail')
-  updateUserThumbnail(
+  updateThumbnail(
     @GetUser() user: User,
-    @UploadedFile() file: Express.Multer.File,
+    // `undefined` when the request contains no file.
+    @UploadedFile() file: Express.Multer.File | undefined,
   ): Promise<UpdatedUserThumbnailDto> {
-    return this.userService.updateUserThumbnail(
-      user.email,
-      // Multer already saved the file; turn its new name into a public URL.
+    // Checked here because it is about the shape of the HTTP request. It used
+    // to fail later on `file.filename` with a 500.
+    if (!file) {
+      throw new BadRequestException('An image file is required');
+    }
+    return this.userService.updateThumbnail(
+      user,
       publicImageUrl(file.filename),
     );
   }
 
+  @ApiOperation({ summary: `Go back to the default profile picture` })
   @ApiResponse({
+    type: UpdatedUserThumbnailDto,
     status: 200,
     description: 'Success',
   })
-  @ApiOperation({ summary: `Delete the user's thumbnail` })
   @Delete('/thumbnail')
-  deleteThumbnail(@GetUser() user: User): Promise<UpdatedUserThumbnailDto> {
-    return this.userService.deleteThumbnail(user);
+  resetThumbnail(@GetUser() user: User): Promise<UpdatedUserThumbnailDto> {
+    return this.userService.resetThumbnail(user);
   }
 
-  @ApiResponse({
-    status: 200,
-    description: 'Success',
-  })
+  @ApiOperation({ summary: `Change your status message` })
   @ApiBody({ type: StatusMessageDto })
-  @ApiOperation({ summary: `Update user's status message` })
+  @ApiResponse({ status: 200, description: 'Success' })
   @Patch('/statusMessage')
   updateStatusMessage(
     @GetUser() user: User,
     @Body() statusMessageDto: StatusMessageDto,
   ): Promise<void> {
     return this.userService.updateStatusMessage(
-      user.email,
+      user,
       statusMessageDto.statusMessage,
     );
   }
 
+  // ==========================================================================
+  //  Another user's profile (keep this route LAST: `/:userEmail` matches any
+  //  single path segment)
+  // ==========================================================================
+
+  @ApiOperation({
+    summary: `Another user's profile (+ whether you follow them)`,
+  })
+  @ApiParam({ name: 'userEmail', description: `The user's email` })
+  @ApiQuery({
+    name: 'userEmail',
+    description: `Same email; takes precedence over the path (the Flutter app sends it here)`,
+    required: false,
+  })
   @ApiResponse({
-    type: UserListDto,
+    type: UserInfoIncludingIsFollowingDto,
     status: 200,
     description: 'Success',
   })
-  @ApiQuery({
-    name: 'keyword',
-    description: `Returns users whose username contains the keyword`,
-    required: true,
-    allowEmptyValue: true,
-  })
-  @ApiQuery({
-    name: 'page',
-    description: `The page's number to call`,
-    required: true,
-  })
-  @ApiQuery({
-    name: 'limit',
-    description: `The number of items on a single page`,
-    required: true,
-  })
-  @ApiOperation({ summary: `Search user list by keyword` })
-  @Get('/search/users')
-  getUserListByKeyword(
+  @Get('/:userEmail')
+  getProfile(
     @GetUser() user: User,
-    @Query('keyword') keyword: string,
-    @Query('page', ParseIntPipe) page: number,
-    @Query('limit', ParseIntPipe) limit: number,
-  ): Promise<UserListDto> {
-    return this.userService.getUserListByKeyword(user, keyword, page, limit);
+    @Param('userEmail') emailInPath: string,
+    @Query('userEmail') emailInQuery: string | undefined,
+  ): Promise<UserInfoIncludingIsFollowingDto> {
+    // The Flutter app sends the literal text "{userEmail}" in the path and the
+    // real email in the query, so the query wins. Normal REST clients can just
+    // put the email in the path.
+    return this.userService.getProfile(emailInQuery ?? emailInPath, user.email);
   }
 }

@@ -13,7 +13,7 @@
  * (`findOneBy`, `save`, `create`, `delete`, ...) are available as well, next to
  * the custom queries below.
  */
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
 import { CommentEntity } from '../comment/comment.entity';
 import { PostStatus } from './post-status.enum';
@@ -84,28 +84,6 @@ export class PostRepository extends Repository<PostEntity> {
       await this.attachCommentCounts([post]);
     }
     return post;
-  }
-
-  /**
-   * Adds or removes `email` in the post's list of users who bookmarked it.
-   *
-   * Called by UserService as part of the bookmark toggle (the user's own
-   * bookmark list lives on the User row, this list on the Post row).
-   * TODO(user module refactor): move this toggle logic into a service.
-   */
-  async postBookMark(email: string, postId: number): Promise<string[]> {
-    const post = await this.findOneBy({ id: postId });
-    if (!post) {
-      throw new NotFoundException(`Can't find Post with id ${postId}`);
-    }
-
-    // Already bookmarked → remove; otherwise → add.
-    post.bookMarkedUsers = post.bookMarkedUsers.includes(email)
-      ? post.bookMarkedUsers.filter((bookmarkedBy) => bookmarkedBy !== email)
-      : [...post.bookMarkedUsers, email];
-
-    await this.save(post);
-    return post.bookMarkedUsers;
   }
 
   // ==========================================================================

@@ -14,7 +14,7 @@
  *   It has no dependencies and no state; it only transforms data. A plain
  *   function is the simplest thing that works and is trivial to unit test.
  */
-import { UserSimpleInfoDto } from '../user/dto/user-simple-info.dto';
+import { toUserSimpleInfoDto } from '../user/user.mapper';
 import { PostInfoDto } from './dto/post-info.dto';
 import { PostEntity } from './post.entity';
 
@@ -33,17 +33,12 @@ export function toPostInfoDto(
   post: PostEntity,
   viewerEmail: string,
 ): PostInfoDto {
-  // Only the public parts of the author are exposed (no bookmarks, etc.).
-  const author = new UserSimpleInfoDto();
-  author.email = post.user.email;
-  author.username = post.user.username;
-  author.thumbnail = post.user.thumbnail;
-
   const dto = new PostInfoDto();
   dto.id = post.id;
   dto.description = post.description;
   dto.status = post.status;
-  dto.user = author;
+  // Only the public parts of the author are exposed (no bookmarks, etc.).
+  dto.user = toUserSimpleInfoDto(post.user);
   dto.createdAt = post.createdAt;
   dto.updatedAt = post.updatedAt;
   dto.imageUrls = post.imageUrls;
