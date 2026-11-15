@@ -13,6 +13,7 @@
  *   production. If a new global setting is added here later (for example a
  *   global ValidationPipe), the tests pick it up automatically.
  */
+import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import {
   DocumentBuilder,
@@ -29,6 +30,30 @@ import { SocketIoAdapter } from './chatroom/socket-io.adapters';
 export function configureApp(
   app: NestExpressApplication,
 ): NestExpressApplication {
+  // -------------------------------------------------------------------------
+  // Request validation for EVERY endpoint
+  // -------------------------------------------------------------------------
+  // Request DTO classes declare rules with class-validator decorators, e.g.
+  //
+  //   class CreateCommentDto {
+  //     @IsNotEmpty() content: string;
+  //   }
+  //
+  // A ValidationPipe checks incoming request data (body, query, params) against
+  // those rules and answers 400 Bad Request, listing the problems, when they are
+  // broken. Registering it globally means no endpoint can forget it; previously
+  // only POST /auth/signin had one, so the rules on every other DTO were ignored
+  // and invalid input reached the database (500 errors or empty values saved).
+  //
+  // Options intentionally left at their defaults for now:
+  //   - whitelist: true  → would REMOVE every request field that has no
+  //                        validation decorator. Many DTOs have no decorators
+  //                        yet, so this would silently drop real data.
+  //   - transform: true  → would convert payloads into DTO class instances and
+  //                        cast types. Changes what services receive.
+  // Both are planned once every request DTO declares its rules (per-module PRs).
+  app.useGlobalPipes(new ValidationPipe());
+
   // -------------------------------------------------------------------------
   // Swagger (interactive API documentation) at http://<host>:<port>/api
   // -------------------------------------------------------------------------

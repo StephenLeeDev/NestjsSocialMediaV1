@@ -1,4 +1,4 @@
-import { Body, Controller, Post, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthCredentialsDto } from './dto/auth-credential.dto';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -31,9 +31,10 @@ export class AuthController {
   })
   @Post('/signin')
   signIn(
-    @Body(ValidationPipe) AuthCredentialsDto: AuthCredentialsDto,
+    // Validated by the global ValidationPipe (see app.setup.ts).
+    @Body() authCredentialsDto: AuthCredentialsDto,
   ): Promise<{ accessToken: string }> {
-    return this.authService.signIn(AuthCredentialsDto);
+    return this.authService.signIn(authCredentialsDto);
   }
 
   @ApiResponse({

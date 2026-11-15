@@ -49,10 +49,14 @@ export class CommentController {
   })
   @Post('/')
   createComment(
-    @Body() commentInfoDto: CommentInfoDto,
+    // The REQUEST body is a CreateCommentDto (what the client sends).
+    // It used to be typed as CommentInfoDto, which is the RESPONSE shape and
+    // requires server-generated fields (user, createdAt, ...). With validation
+    // active, that would have rejected every valid request.
+    @Body() createCommentDto: CreateCommentDto,
     @GetUser() user: User,
   ): Promise<CommentInfoDto> {
-    return this.commentService.createComment(commentInfoDto, user);
+    return this.commentService.createComment(createCommentDto, user);
   }
 
   @ApiResponse({
