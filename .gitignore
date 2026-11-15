@@ -35,3 +35,15 @@ lerna-debug.log*
 !.vscode/extensions.json
 
 /src/static
+# Environment variables (secrets) — use .env.example as the template
+.env
+.env.*
+!.env.example
+
+# User-uploaded files (keep only bundled default/dummy images)
+/static/images/*
+!/static/images/default/
+!/static/images/dummy/
+
+# TypeScript incremental build cache
+*.tsbuildinfo

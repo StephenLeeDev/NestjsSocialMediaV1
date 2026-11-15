@@ -1,6 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 
-import { UserSimpleInfoIncludingStatusMessageDto } from "src/user/dto/user-simple-info-including-status-message.dto";
+import { UserSimpleInfoIncludingStatusMessageDto } from "../../user/dto/user-simple-info-including-status-message.dto";
 
 export class ChatRoomDto {
 

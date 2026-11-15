@@ -1,25 +1,20 @@
 import { Injectable, Logger, NotFoundException } from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { PostRepository } from "src/post/post.repository";
+import { PostRepository } from "../post/post.repository";
 import { CommentRepository } from "./comment.repository";
 import { CreateCommentDto } from "./dto/create-comment.dto";
-import { User } from "src/user/user.entity";
+import { User } from "../user/user.entity";
 import { CommentInfoDto, CommentInfoListDto } from "./dto/comment-info.dto";
 import { UpdateCommentDto } from "./dto/update-comment.dto";
-import { PostEntity } from "src/post/post.entity";
-import { UserRepository } from "src/user/user.repository";
-import { AuthRepository } from "src/auth/auth.repository";
+import { PostEntity } from "../post/post.entity";
+import { UserRepository } from "../user/user.repository";
+import { AuthRepository } from "../auth/auth.repository";
 
 @Injectable()
 export class CommentService {
     constructor(
-        @InjectRepository(PostRepository)
         private postRepository: PostRepository,
-        @InjectRepository(CommentRepository)
         private commentRepository: CommentRepository,
-        @InjectRepository(UserRepository)
         private userRepository: UserRepository,
-        @InjectRepository(AuthRepository)
         private authRepository: AuthRepository,
     ) { }
 
@@ -57,7 +52,7 @@ export class CommentService {
     }
 
     async getPostById(id: number): Promise<PostEntity> {
-        const post = await this.postRepository.findOne(id);
+        const post = await this.postRepository.findOneBy({ id });
 
         if (!post) {
             this.logger.error(`Can't find Post with id ${id}`);
@@ -79,7 +74,7 @@ export class CommentService {
             users = await this.userRepository.find({ take: count });
         }
     
-        const post = await this.postRepository.findOne(createCommentDto.postId);
+        const post = await this.postRepository.findOneBy({ id: createCommentDto.postId });
     
         const words = ['Lorem', 'ipsum', 'dolor', 'sit', 'amet', 'consectetur', 'adipiscing', 'elit', 'sed', 'do', 'eiusmod', 'tempor', 'incididunt', 'ut', 'labore', 'et', 'dolore', 'magna', 'aliqua'];
     

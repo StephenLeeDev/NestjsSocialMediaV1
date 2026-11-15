@@ -1,13 +1,17 @@
-import { ConflictException, InternalServerErrorException, Logger } from "@nestjs/common";
-import { EntityRepository, Repository } from "typeorm";
+import { Injectable, ConflictException, InternalServerErrorException, Logger } from "@nestjs/common";
+import { DataSource, Repository } from "typeorm";
 import { AuthCredentialsDto } from "./dto/auth-credential.dto";
 import { User } from "../user/user.entity";
-import * as moment from 'moment-timezone';
-import { v4 as uuidv4 } from 'uuid';
+import moment from 'moment-timezone';
+import { randomUUID } from 'crypto';
 import { AuthSocialType } from "./auth-social-type-validation.enum";
 
-@EntityRepository(User)
+@Injectable()
 export class AuthRepository extends Repository<User> {
+
+    constructor(dataSource: DataSource) {
+        super(User, dataSource.createEntityManager());
+    }
 
     private logger = new Logger('AuthRepository');
 
@@ -15,7 +19,7 @@ export class AuthRepository extends Repository<User> {
         const { username, socialType, email } = authCredentialsDto;
 
         const createdAt = moment().tz('Asia/Seoul').format('YYYY-MM-DD HH:mm:ss.SSS'); // You can set your time zone here
-        const uuid = uuidv4();
+        const uuid = randomUUID();
         const user =
             this.create({
                 uuid,
@@ -29,7 +33,7 @@ export class AuthRepository extends Repository<User> {
         try {
             await this.save(user);
             this.logger.verbose(`User ${user.email} account has generated`);
-        } catch (error) {
+        } catch (error: any) {
             if (error.code === '23505') {
                 throw new ConflictException(`Sign up Failed. ${email} account already exists.`);
             } else {
@@ -51,7 +55,7 @@ export class AuthRepository extends Repository<User> {
             const thumbnail = `${serverUrl}/images/dummy/${thumbnailNumber}.jpeg`;
     
             const createdAt = moment().tz('Asia/Seoul').format('YYYY-MM-DD HH:mm:ss.SSS'); // You can set your time zone here
-            const uuid = uuidv4();
+            const uuid = randomUUID();
     
             const words = ['Lorem', 'ipsum', 'dolor', 'sit', 'amet', 'consectetur', 'adipiscing', 'elit', 'sed', 'do', 'eiusmod', 'tempor', 'incididunt', 'ut', 'labore', 'et', 'dolore', 'magna', 'aliqua'];
     
@@ -87,7 +91,7 @@ export class AuthRepository extends Repository<User> {
                 await new Promise((resolve) => setTimeout(resolve, 1));
                 await this.save(user);
                 this.logger.verbose(`User ${user.email} account has been generated`);
-            } catch (error) {
+            } catch (error: any) {
                 if (error.code === '23505') {
                     throw new ConflictException(`Sign up Failed. ${user.email} account already exists.`);
                 } else {

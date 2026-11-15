@@ -1,7 +1,7 @@
 import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
-import { User } from "src/user/user.entity";
+import { User } from "../user/user.entity";
 import { CommentType } from "./comment-type.enum";
-import { PostEntity } from "src/post/post.entity";
+import { PostEntity } from "../post/post.entity";
 
 @Entity()
 export class CommentEntity extends BaseEntity {

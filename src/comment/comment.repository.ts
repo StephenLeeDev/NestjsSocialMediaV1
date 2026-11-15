@@ -1,19 +1,44 @@
-import { EntityRepository, Repository } from "typeorm";
+import { DataSource, Repository } from "typeorm";
 import { CommentEntity } from "./comment.entity";
 import { CreateCommentDto } from "./dto/create-comment.dto";
 import { CommentInfoDto, CommentInfoListDto } from "./dto/comment-info.dto";
-import * as moment from 'moment-timezone';
-import { Logger, UnauthorizedException } from "@nestjs/common";
+import moment from 'moment-timezone';
+import { Injectable, Logger, UnauthorizedException } from "@nestjs/common";
 import { CommentType } from "./comment-type.enum";
-import { User } from "src/user/user.entity";
-import { PostEntity } from "src/post/post.entity";
+import { User } from "../user/user.entity";
+import { PostEntity } from "../post/post.entity";
 import { UpdateCommentDto } from "./dto/update-comment.dto";
-import { UserSimpleInfoDto } from "src/user/dto/user-simple-info.dto";
+import { UserSimpleInfoDto } from "../user/dto/user-simple-info.dto";
 
-@EntityRepository(CommentEntity)
+@Injectable()
 export class CommentRepository extends Repository<CommentEntity> {
 
     private logger = new Logger('CommentRepository');
+
+    constructor(dataSource: DataSource) {
+        super(CommentEntity, dataSource.createEntityManager());
+    }
+
+    /**
+     * Sets `childrenCount` (number of replies) on each comment with a single grouped query.
+     * Replaces `loadRelationCountAndMap`, which was removed in TypeORM 1.0.
+     */
+    private async attachChildrenCounts(comments: CommentEntity[]): Promise<void> {
+        if (comments.length === 0) return;
+
+        const rows: { parentCommentId: number; count: string }[] = await this
+            .createQueryBuilder('reply')
+            .select('reply.parentCommentId', 'parentCommentId')
+            .addSelect('COUNT(*)', 'count')
+            .where('reply.parentCommentId IN (:...ids)', { ids: comments.map((comment) => comment.id) })
+            .groupBy('reply.parentCommentId')
+            .getRawMany();
+
+        const countByParentId = new Map(rows.map((row) => [Number(row.parentCommentId), Number(row.count)]));
+        for (const comment of comments) {
+            comment.childrenCount = countByParentId.get(comment.id) ?? 0;
+        }
+    }
 
     async createComment(createCommentDto: CreateCommentDto, user: User, post: PostEntity): Promise<CommentInfoDto> {
 
@@ -59,8 +84,6 @@ export class CommentRepository extends Repository<CommentEntity> {
         const query = this.createQueryBuilder('comment_entity')
             .leftJoinAndSelect('comment_entity.post', 'post')
             .leftJoinAndSelect('comment_entity.user', 'user')
-            .leftJoin('comment_entity.childComments', 'children')
-            .loadRelationCountAndMap('comment_entity.childrenCount', 'comment_entity.childComments')
             .where('comment_entity.postId = :postId', { postId })
             .andWhere('comment_entity.type = :type', { type: CommentType.Comment })
             .orderBy('comment_entity.createdAt', 'DESC')
@@ -68,6 +91,7 @@ export class CommentRepository extends Repository<CommentEntity> {
             .take(limit);
       
         const [comments, total] = await query.getManyAndCount();
+        await this.attachChildrenCounts(comments);
       
         const commentList: CommentInfoDto[] = comments.map((comment: CommentEntity) => {
           const commentInfo: CommentInfoDto = new CommentInfoDto();
@@ -126,7 +150,7 @@ export class CommentRepository extends Repository<CommentEntity> {
 
     async updateComment(updateCommentDto: UpdateCommentDto, user: User): Promise<CommentInfoDto> {
         const { id, content } = updateCommentDto;
-        const comment = await this.findOne(id, { relations: ['user', 'post', 'childComments'] });
+        const comment = await this.findOne({ where: { id }, relations: { user: true, post: true, childComments: true } });
 
         if (comment) {
             if (comment.user.email != user.email) {
@@ -136,7 +160,7 @@ export class CommentRepository extends Repository<CommentEntity> {
                 const updatedAt = moment().tz('Asia/Seoul').format('YYYY-MM-DD HH:mm:ss.SSS'); // You can set your time zone here
                 comment.updatedAt = new Date(updatedAt);
                 comment.content = content;
-                this.save(comment);
+                await this.save(comment);
                 
                 var updatedComment = new CommentInfoDto();
                 updatedComment.id = comment.id;

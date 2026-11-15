@@ -1,6 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { PostStatus } from "../post-status.enum";
-import { UserSimpleInfoDto } from "src/user/dto/user-simple-info.dto";
+import { UserSimpleInfoDto } from "../../user/dto/user-simple-info.dto";
 
 export class PostInfoDto {
 

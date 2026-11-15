@@ -2,14 +2,13 @@ import { Body, Controller, Delete, Get, Logger, Param, ParseIntPipe, Patch, Post
 import { PostService } from './post.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { AuthGuard } from '@nestjs/passport';
-import { GetUser } from 'src/auth/get-user.decorator';
-import { User } from 'src/user/user.entity';
+import { GetUser } from '../auth/get-user.decorator';
+import { User } from '../user/user.entity';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { editFileName, imageFileFilter } from "../lib/multerOptions";
 import { diskStorage } from 'multer';
 import { ConfigService } from '@nestjs/config';
-import { ApiImplicitFile } from '@nestjs/swagger/dist/decorators/api-implicit-file.decorator';
 import { PostInfoDto, PostResponse } from './dto/post-info.dto';
 import { PostLikeCountDto } from './dto/post-like-count.dto';
 import { UpdatePostDescriptionDto } from './dto/update-post-description.dto';
@@ -34,8 +33,16 @@ export class PostController {
         description: 'Success',
     })
     @ApiConsumes('multipart/form-data')
-    @ApiImplicitFile({ name: 'files', description: `Post's images`, required: true })
-    @ApiBody({ type: CreatePostDto })
+    @ApiBody({
+        schema: {
+            type: 'object',
+            required: ['description', 'files'],
+            properties: {
+                description: { type: 'string', example: 'Write a description here' },
+                files: { type: 'array', items: { type: 'string', format: 'binary' }, description: `Post's images (max 4)` },
+            },
+        },
+    })
     @ApiOperation({ summary: 'Create a new post' })
     @UseInterceptors(FilesInterceptor("files", 4, {
       storage: diskStorage({

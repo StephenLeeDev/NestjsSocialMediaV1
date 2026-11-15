@@ -1,12 +1,12 @@
 import { Controller, Get, Post, Delete, Query, UseGuards, ParseIntPipe, Body } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { GetUser } from 'src/auth/get-user.decorator';
+import { GetUser } from '../auth/get-user.decorator';
 import { FollowService } from './follow.service';
-import { User } from 'src/user/user.entity';
+import { User } from '../user/user.entity';
 import { AuthGuard } from '@nestjs/passport';
 import { UserListDto } from '../user/dto/user-list.dto';
 import { SingleIntegerDto } from './dto/single-integer.dto';
-import { EmailDto } from 'src/user/dto/email.dto';
+import { EmailDto } from '../user/dto/email.dto';
 
 @ApiTags('FOLLOW')
 @UseGuards(AuthGuard())

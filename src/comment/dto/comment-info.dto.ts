@@ -1,7 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { IsNotEmpty } from "class-validator";
-import { CommentType } from "src/comment/comment-type.enum";
-import { UserSimpleInfoDto } from "src/user/dto/user-simple-info.dto";
+import { CommentType } from "../comment-type.enum";
+import { UserSimpleInfoDto } from "../../user/dto/user-simple-info.dto";
 
 export class CommentInfoDto {
 

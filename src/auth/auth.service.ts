@@ -1,5 +1,4 @@
 import { ConflictException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
 import { AuthCredentialsDto } from './dto/auth-credential.dto';
 import { AuthRepository } from './auth.repository';
 import { JwtService } from '@nestjs/jwt';
@@ -8,7 +7,6 @@ import { AuthSocialType } from './auth-social-type-validation.enum';
 @Injectable()
 export class AuthService {
     constructor(
-        @InjectRepository(AuthRepository)
         private authRepository: AuthRepository,
         private jwtService: JwtService
     ) { }
@@ -18,7 +16,7 @@ export class AuthService {
     async signUp(authCredentialsDto: AuthCredentialsDto): Promise<{accessToken: string}> {
         const { email } = authCredentialsDto;
 
-        const user = await this.authRepository.findOne({ email });
+        const user = await this.authRepository.findOneBy({ email });
 
         // User account exists.
         if (user) {
@@ -36,7 +34,7 @@ export class AuthService {
 
     async signIn(authCredentialsDto: AuthCredentialsDto): Promise<{accessToken: string}> {
         const { socialType, email } = authCredentialsDto;
-        const user = await this.authRepository.findOne({ email });
+        const user = await this.authRepository.findOneBy({ email });
 
         // User account exists.
         if (user) {
@@ -60,7 +58,7 @@ export class AuthService {
     async test(): Promise<{ accessToken: string }> {
         const username = 'testUser';
         const email = 'testUser@gmail.com';
-        const user = await this.authRepository.findOne({ email });
+        const user = await this.authRepository.findOneBy({ email });
 
         if (user) {
             const accessToken = await this.jwtService.sign({ email });

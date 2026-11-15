@@ -1,14 +1,19 @@
-import { EntityRepository, Repository } from "typeorm";
-import * as moment from 'moment-timezone';
+import { Injectable } from "@nestjs/common";
+import { DataSource, Repository } from "typeorm";
+import moment from 'moment-timezone';
 import { MessageEntity } from "./message.entity";
-import { User } from "src/user/user.entity";
+import { User } from "../user/user.entity";
 import { MessageInfoDto, MessageInfoListDto } from "./dto/message-info.dto";
 import { CreateMessageDto } from "./dto/create-message.dto";
-import { ChatRoomEntity } from "src/chatroom/chatroom.entity";
-import { UserSimpleInfoIncludingStatusMessageDto } from "src/user/dto/user-simple-info-including-status-message.dto";
+import { ChatRoomEntity } from "../chatroom/chatroom.entity";
+import { UserSimpleInfoIncludingStatusMessageDto } from "../user/dto/user-simple-info-including-status-message.dto";
 
-@EntityRepository(MessageEntity)
+@Injectable()
 export class MessageRepository extends Repository<MessageEntity> {
+
+    constructor(dataSource: DataSource) {
+        super(MessageEntity, dataSource.createEntityManager());
+    }
 
     async createMessage(sender: User, chatRoom: ChatRoomEntity, createMessageDto: CreateMessageDto): Promise<MessageInfoDto> {
         

@@ -1,24 +1,21 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { UserRepository } from 'src/user/user.repository';
+import { UserRepository } from '../user/user.repository';
 import { FollowRepository } from './follow.repository';
-import { InjectRepository } from '@nestjs/typeorm';
-import { User } from 'src/user/user.entity';
+import { User } from '../user/user.entity';
 import { UserListDto } from '../user/dto/user-list.dto';
 import { SingleIntegerDto } from './dto/single-integer.dto';
 
 @Injectable()
 export class FollowService {
     constructor(
-        @InjectRepository(UserRepository)
         private userRepository: UserRepository,
-        @InjectRepository(FollowRepository)
         private followRepository: FollowRepository,
     ) {}
 
     private logger = new Logger('FollowService');
 
     async createFollow(follower: User, following: string): Promise<SingleIntegerDto> {
-        const user = await this.userRepository.findOne({ email: following });
+        const user = await this.userRepository.findOneBy({ email: following });
         await this.followRepository.createFollow(follower, user);
 
         let singleIntegerDto: SingleIntegerDto = new SingleIntegerDto();

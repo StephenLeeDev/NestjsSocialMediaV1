@@ -3,9 +3,9 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ChatRoomService } from './chatroom.service';
 import { ChatRoomDto, ChatRoomListDto } from './dto/chatroom.dto';
-import { GetUser } from 'src/auth/get-user.decorator';
-import { User } from 'src/user/user.entity';
-import { ReceiverEmailDto } from 'src/user/dto/receiver-email.dto';
+import { GetUser } from '../auth/get-user.decorator';
+import { User } from '../user/user.entity';
+import { ReceiverEmailDto } from '../user/dto/receiver-email.dto';
 
 @ApiTags('CHAT')
 @UseGuards(AuthGuard())
