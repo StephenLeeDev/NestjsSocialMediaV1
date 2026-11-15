@@ -12,6 +12,7 @@
  *   - POST   /post/:postId/like     : like / unlike (toggle)
  *   - PATCH  /post/description      : edit the description (author only)
  *   - DELETE /post/:id              : delete a post (author only)
+ *   - POST   /post/test/dummy       : development helper that generates dummy posts
  *
  * Two users are used throughout:
  *   - "author" writes most of the posts
@@ -264,6 +265,59 @@ describe('Post (e2e)', () => {
         .get(`/post/${post.id}`)
         .set(bearer(token))
         .expect(404);
+    });
+  });
+
+  describe('POST /post/test/dummy (development helper)', () => {
+    // This endpoint fills the database with 10 random posts for manual testing.
+    // It saves the posts in the BACKGROUND (setTimeout) and answers right away,
+    // so the test waits until all 10 posts exist before checking anything.
+
+    /**
+     * Polls the feed until it contains `expected` posts, or fails after ~3 s.
+     * Needed because the endpoint returns before its background saves finish.
+     */
+    async function waitForPostCount(expected: number): Promise<number> {
+      let total = 0;
+      for (let attempt = 0; attempt < 30; attempt++) {
+        const res = await request(server)
+          .get('/post')
+          .query({ page: 1, limit: 1 })
+          .set(bearer(token))
+          .expect(200);
+        total = res.body.total;
+        if (total >= expected) break;
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+      return total;
+    }
+
+    beforeEach(async () => {
+      // Exact post counts are asserted below, so start from an empty database.
+      await resetDatabase(app);
+      token = await signIn(app, 'author@gmail.com', 'Author');
+    });
+
+    it("creates 10 posts for the given user's email", async () => {
+      await request(server)
+        .post('/post/test/dummy')
+        .query({ email: 'author@gmail.com' })
+        .set(bearer(token))
+        .expect(201);
+
+      expect(await waitForPostCount(10)).toBe(10);
+    });
+
+    it('creates 10 posts for random dummy users when no email is given', async () => {
+      // Regression test: without `email`, the service looked a user up with
+      // `findOneBy({ email: undefined })`. TypeORM 1.x rejects `undefined` in
+      // where conditions (older versions silently ignored it), so this returned 500.
+      await request(server)
+        .post('/post/test/dummy')
+        .set(bearer(token))
+        .expect(201);
+
+      expect(await waitForPostCount(10)).toBe(10);
     });
   });
 });

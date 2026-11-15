@@ -146,7 +146,13 @@ export class PostService {
 
   async createDummyPosts(email?: string): Promise<void> {
     const count = 10;
-    const user = await this.userRepository.findOneBy({ email });
+
+    // Only look the user up when an email was actually given.
+    // TypeORM 1.x throws on `undefined` inside a where condition
+    // (`findOneBy({ email: undefined })`), while older versions silently dropped
+    // the condition and returned the FIRST user in the table. Checking first makes
+    // the intent explicit: no email → no specific user → random dummy users below.
+    const user = email ? await this.userRepository.findOneBy({ email }) : null;
 
     let shuffledUsers: User[] = [];
 
@@ -165,7 +171,10 @@ export class PostService {
         users = await this.userRepository.find({ take: count });
       }
 
-      const duplicatedUsers = [...users, ...users.slice(0, count - users.length)];
+      const duplicatedUsers = [
+        ...users,
+        ...users.slice(0, count - users.length),
+      ];
       shuffledUsers = shuffleArray(duplicatedUsers);
     }
 
