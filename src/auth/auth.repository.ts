@@ -7,7 +7,7 @@ import {
 import { DataSource, Repository } from 'typeorm';
 import { AuthCredentialsDto } from './dto/auth-credential.dto';
 import { User } from '../user/user.entity';
-import moment from 'moment-timezone';
+import { currentSeoulTimestamp } from '../common/utils/date.util';
 import { randomUUID } from 'crypto';
 import { AuthSocialType } from './auth-social-type-validation.enum';
 
@@ -22,9 +22,7 @@ export class AuthRepository extends Repository<User> {
   async createUser(authCredentialsDto: AuthCredentialsDto): Promise<void> {
     const { username, socialType, email } = authCredentialsDto;
 
-    const createdAt = moment()
-      .tz('Asia/Seoul')
-      .format('YYYY-MM-DD HH:mm:ss.SSS'); // You can set your time zone here
+    const createdAt = currentSeoulTimestamp(); // Seoul local time, see common/utils/date.util.ts
     const uuid = randomUUID();
     const user = this.create({
       uuid,
@@ -72,9 +70,7 @@ export class AuthRepository extends Repository<User> {
       const thumbnailNumber = Math.floor(Math.random() * thumbnailsCount) + 1;
       const thumbnail = `${serverUrl}/images/dummy/${thumbnailNumber}.jpeg`;
 
-      const createdAt = moment()
-        .tz('Asia/Seoul')
-        .format('YYYY-MM-DD HH:mm:ss.SSS'); // You can set your time zone here
+      const createdAt = currentSeoulTimestamp(); // Seoul local time, see common/utils/date.util.ts
       const uuid = randomUUID();
 
       const words = [

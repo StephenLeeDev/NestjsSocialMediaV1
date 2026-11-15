@@ -2,7 +2,7 @@ import { DataSource, Repository } from 'typeorm';
 import { CommentEntity } from './comment.entity';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { CommentInfoDto, CommentInfoListDto } from './dto/comment-info.dto';
-import moment from 'moment-timezone';
+import { currentSeoulTimestamp } from '../common/utils/date.util';
 import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { CommentType } from './comment-type.enum';
 import { User } from '../user/user.entity';
@@ -50,9 +50,7 @@ export class CommentRepository extends Repository<CommentEntity> {
   ): Promise<CommentInfoDto> {
     const { content, parentCommentId, parentCommentAuthor } = createCommentDto;
 
-    const createdAt = moment()
-      .tz('Asia/Seoul')
-      .format('YYYY-MM-DD HH:mm:ss.SSS'); // You can set your time zone here
+    const createdAt = currentSeoulTimestamp(); // Seoul local time, see common/utils/date.util.ts
     const date = new Date(createdAt);
 
     const comment = this.create({
@@ -190,9 +188,7 @@ export class CommentRepository extends Repository<CommentEntity> {
           'You do not have permission to update this comment',
         );
       } else {
-        const updatedAt = moment()
-          .tz('Asia/Seoul')
-          .format('YYYY-MM-DD HH:mm:ss.SSS'); // You can set your time zone here
+        const updatedAt = currentSeoulTimestamp(); // Seoul local time, see common/utils/date.util.ts
         comment.updatedAt = new Date(updatedAt);
         comment.content = content;
         await this.save(comment);

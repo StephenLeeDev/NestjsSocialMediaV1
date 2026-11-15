@@ -3,7 +3,7 @@ import { DataSource, Repository } from 'typeorm';
 import { PostStatus } from './post-status.enum';
 import { PostEntity } from './post.entity';
 import { CreatePostDto } from './dto/create-post.dto';
-import moment from 'moment-timezone';
+import { currentSeoulTimestamp } from '../common/utils/date.util';
 import {
   Injectable,
   Logger,
@@ -57,9 +57,7 @@ export class PostRepository extends Repository<PostEntity> {
   ): Promise<PostInfoDto> {
     const { description } = createPostDto;
 
-    const createdAt = moment()
-      .tz('Asia/Seoul')
-      .format('YYYY-MM-DD HH:mm:ss.SSS'); // You can set your time zone here
+    const createdAt = currentSeoulTimestamp(); // Seoul local time, see common/utils/date.util.ts
 
     const post = this.create({
       description,

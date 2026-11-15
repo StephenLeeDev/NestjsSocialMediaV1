@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource, Repository } from 'typeorm';
-import moment from 'moment-timezone';
+import { currentSeoulTimestamp } from '../common/utils/date.util';
 import { MessageEntity } from './message.entity';
 import { User } from '../user/user.entity';
 import { MessageInfoDto, MessageInfoListDto } from './dto/message-info.dto';
@@ -21,9 +21,7 @@ export class MessageRepository extends Repository<MessageEntity> {
   ): Promise<MessageInfoDto> {
     const { content, type } = createMessageDto;
 
-    const createdAt = moment()
-      .tz('Asia/Seoul')
-      .format('YYYY-MM-DD HH:mm:ss.SSS'); // You can set your time zone here
+    const createdAt = currentSeoulTimestamp(); // Seoul local time, see common/utils/date.util.ts
     const now = new Date(createdAt);
 
     const message = this.create({

@@ -4,7 +4,7 @@ import { UserRepository } from '../user/user.repository';
 import { User } from '../user/user.entity';
 import { ChatRoomDto, ChatRoomListDto } from './dto/chatroom.dto';
 import { UserChatRoomRepository } from './user-chatroom.repository';
-import moment from 'moment-timezone';
+import { currentSeoulTimestamp } from '../common/utils/date.util';
 import { MessageRepository } from '../message/message.repository';
 import { UserSimpleInfoIncludingStatusMessageDto } from '../user/dto/user-simple-info-including-status-message.dto';
 
@@ -49,9 +49,7 @@ export class ChatRoomService {
     /// The chatroom doesn't exists
     /// Create it first, and then return
     else {
-      const createdAt = moment()
-        .tz('Asia/Seoul')
-        .format('YYYY-MM-DD HH:mm:ss.SSS'); // You can set your time zone here
+      const createdAt = currentSeoulTimestamp(); // Seoul local time, see common/utils/date.util.ts
 
       const chatroom = this.chatRoomRepository.create({
         createdAt,
