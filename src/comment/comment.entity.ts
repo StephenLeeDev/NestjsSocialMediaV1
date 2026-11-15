@@ -21,14 +21,28 @@ export class CommentEntity extends BaseEntity {
     @Column({ nullable: true })
     parentCommentAuthor: string;
 
-    @ManyToOne(() => CommentEntity, comment => comment.childComments)
+    // The parent comment of a REPLY (null for top-level comments).
+    //
+    // onDelete: 'CASCADE' → when a comment is deleted, PostgreSQL automatically
+    // deletes all of its replies too.
+    // Without it, deleting a comment that has replies failed with a foreign key
+    // error (HTTP 500), because the replies still pointed at the deleted comment.
+    // Covered by the e2e test "deletes a comment that has replies, together with its replies".
+    @ManyToOne(() => CommentEntity, comment => comment.childComments, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'parentCommentId' })
     parentComment: CommentEntity;
   
     @OneToMany(() => CommentEntity, comment => comment.parentComment)
     childComments: CommentEntity[];
     
-    @ManyToOne(() => PostEntity, (post) => post.comments, { eager: false })
+    // The post this comment (or reply) belongs to.
+    //
+    // onDelete: 'CASCADE' → when a post is deleted, PostgreSQL automatically
+    // deletes all of its comments and replies too.
+    // Without it, deleting a post that had comments failed with a foreign key
+    // error (HTTP 500), because the comments still pointed at the deleted post.
+    // Covered by the e2e test "deletes a post that has comments, together with its comments".
+    @ManyToOne(() => PostEntity, (post) => post.comments, { eager: false, onDelete: 'CASCADE' })
     @JoinColumn([{ name: 'postId', referencedColumnName: 'id' }])
     post: PostEntity;
     
