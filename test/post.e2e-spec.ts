@@ -12,6 +12,7 @@
  *   - POST   /post/:postId/like     : like / unlike (toggle)
  *   - PATCH  /post/description      : edit the description (author only)
  *   - DELETE /post/:id              : delete a post (author only)
+ *   - PATCH  /post/:id/status       : switch a post between PUBLIC and PRIVATE (author only)
  *   - POST   /post/test/dummy       : development helper that generates dummy posts
  *
  * Two users are used throughout:
@@ -20,6 +21,7 @@
  *              cannot edit or delete the author's posts)
  */
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { readdirSync } from 'fs';
 import request from 'supertest';
 import {
   bearer,
@@ -67,12 +69,41 @@ describe('Post (e2e)', () => {
         description: 'Two pictures',
         status: 'PUBLIC',
         // A brand-new post has no likes, bookmarks or comments yet.
+        likeCount: 0,
         isLiked: false,
         isBookmarked: false,
         commentCount: 0,
         user: { email: 'author@gmail.com', username: 'Author' },
       });
       expect(res.body.imageUrls).toHaveLength(2);
+    });
+
+    it('rejects a post without images', async () => {
+      // A post is a picture post: at least one image is required.
+      await request(server)
+        .post('/post')
+        .set(bearer(token))
+        .field('description', 'No pictures')
+        .expect(400);
+    });
+
+    it('does not keep uploaded images when the request is rejected', async () => {
+      // Multer writes uploaded files to disk BEFORE validation runs. If the
+      // request is then rejected (here: missing description), the files must be
+      // removed again, otherwise every bad request leaves orphan images behind.
+      // NestJS 12's file interceptors already do this (removeFilesOnPipeRejection);
+      // this test makes sure it keeps working.
+      // UPLOAD_DIR is the temp folder configured in test/setup-env.ts.
+      const uploadDir = process.env.UPLOAD_DIR as string;
+      const filesBefore = readdirSync(uploadDir).length;
+
+      await request(server)
+        .post('/post')
+        .set(bearer(token))
+        .attach('files', TEST_IMAGE)
+        .expect(400);
+
+      expect(readdirSync(uploadDir).length).toBe(filesBefore);
     });
   });
 
@@ -129,6 +160,40 @@ describe('Post (e2e)', () => {
       expect(res.body.total).toBe(1);
       expect(res.body.posts[0].description).toBe('third');
     });
+
+    it('GET /post/user reports isLiked / isBookmarked for the VIEWER, not the author', async () => {
+      // "author" likes and bookmarks the post written by "other"...
+      const listed = await request(server)
+        .get('/post/user')
+        .query({ email: 'other@gmail.com', page: 1, limit: 10 })
+        .set(bearer(token))
+        .expect(200);
+      const postId = listed.body.posts[0].id;
+      await request(server)
+        .post(`/post/${postId}/like`)
+        .set(bearer(token))
+        .send({ postId })
+        .expect(201);
+      await request(server)
+        .post('/user/post/bookmark')
+        .set(bearer(token))
+        .send({ postId })
+        .expect(201);
+
+      // ...so when "author" looks at other's posts, they show as liked and bookmarked.
+      // (Previously the flags were computed for the post's AUTHOR, so they were false.)
+      const res = await request(server)
+        .get('/post/user')
+        .query({ email: 'other@gmail.com', page: 1, limit: 10 })
+        .set(bearer(token))
+        .expect(200);
+      expect(res.body.posts[0]).toMatchObject({
+        id: postId,
+        likeCount: 1,
+        isLiked: true,
+        isBookmarked: true,
+      });
+    });
   });
 
   describe('GET /post/:id', () => {
@@ -152,6 +217,78 @@ describe('Post (e2e)', () => {
 
     it('returns 404 for an unknown post', async () => {
       await request(server).get('/post/999999').set(bearer(token)).expect(404);
+    });
+
+    it('returns 400 for an id that is not a number', async () => {
+      // Without a ParseIntPipe the text "abc" reached the SQL query and
+      // PostgreSQL failed with "invalid input syntax for type integer" (500).
+      await request(server).get('/post/abc').set(bearer(token)).expect(400);
+    });
+  });
+
+  describe('PATCH /post/:id/status', () => {
+    /** Toggles the post's status as the owner of `asToken`. */
+    const toggleStatus = (postId: number, asToken: string) =>
+      request(server).patch(`/post/${postId}/status`).set(bearer(asToken));
+
+    it("switches the author's own post between PUBLIC and PRIVATE", async () => {
+      const post = await createPost(app, token);
+
+      await toggleStatus(post.id, token).expect(200);
+      let res = await request(server)
+        .get(`/post/${post.id}`)
+        .set(bearer(token))
+        .expect(200);
+      expect(res.body.status).toBe('PRIVATE');
+
+      // Calling it again switches back.
+      await toggleStatus(post.id, token).expect(200);
+      res = await request(server)
+        .get(`/post/${post.id}`)
+        .set(bearer(token))
+        .expect(200);
+      expect(res.body.status).toBe('PUBLIC');
+    });
+
+    it("rejects changing someone else's post", async () => {
+      // Previously ANY signed-in user could hide anyone's post.
+      const post = await createPost(app, token);
+
+      await toggleStatus(post.id, otherToken).expect(401);
+
+      const res = await request(server)
+        .get(`/post/${post.id}`)
+        .set(bearer(token))
+        .expect(200);
+      expect(res.body.status).toBe('PUBLIC');
+    });
+
+    it('returns 404 for an unknown post', async () => {
+      await toggleStatus(999999, token).expect(404);
+    });
+
+    it('hides a PRIVATE post from other users but not from its author', async () => {
+      const post = await createPost(app, token);
+      await toggleStatus(post.id, token).expect(200);
+
+      // Other users cannot open it directly...
+      await request(server)
+        .get(`/post/${post.id}`)
+        .set(bearer(otherToken))
+        .expect(404);
+      // ...and it is not in the feed.
+      const feed = await request(server)
+        .get('/post')
+        .query({ page: 1, limit: 100 })
+        .set(bearer(otherToken))
+        .expect(200);
+      expect(feed.body.posts.map((p) => p.id)).not.toContain(post.id);
+
+      // The author can still open it.
+      await request(server)
+        .get(`/post/${post.id}`)
+        .set(bearer(token))
+        .expect(200);
     });
   });
 
@@ -185,6 +322,24 @@ describe('Post (e2e)', () => {
         .send({ postId: post.id })
         .expect(201);
       expect(res.body).toEqual({ likeCount: 0 });
+    });
+
+    it('rejects a like request without postId in the body', async () => {
+      const post = await createPost(app, token);
+
+      await request(server)
+        .post(`/post/${post.id}/like`)
+        .set(bearer(otherToken))
+        .send({})
+        .expect(400);
+    });
+
+    it('returns 404 for an unknown post', async () => {
+      await request(server)
+        .post('/post/999999/like')
+        .set(bearer(otherToken))
+        .send({ postId: 999999 })
+        .expect(404);
     });
   });
 
