@@ -7,7 +7,7 @@ import { GetUser } from '../auth/get-user.decorator';
 import { User } from './user.entity';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { editFileName, imageFileFilter } from '../lib/multerOptions';
+import { editFileName, imageFileFilter, uploadDestination } from '../lib/multerOptions';
 import { UpdatedUserThumbnailDto } from './dto/updated-user-thumbnail.dto';
 import { ConfigService } from '@nestjs/config';
 import { UserInfoIncludingIsFollowingDto } from './dto/user-info-including-isfollowing.dto';
@@ -98,7 +98,7 @@ export class UserController {
     @UseInterceptors(
         FileInterceptor('file', {
           storage: diskStorage({
-            destination: './static/images',
+            destination: uploadDestination,
             filename: editFileName,
           }),
           fileFilter: imageFileFilter,
