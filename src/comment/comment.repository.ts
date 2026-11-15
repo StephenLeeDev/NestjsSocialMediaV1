@@ -1,26 +1,148 @@
-import { DataSource, Repository } from 'typeorm';
-import { CommentEntity } from './comment.entity';
-import { CreateCommentDto } from './dto/create-comment.dto';
-import { CommentInfoDto, CommentInfoListDto } from './dto/comment-info.dto';
-import { currentSeoulTimestamp } from '../common/utils/date.util';
-import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+/**
+ * ============================================================================
+ *  CommentRepository: database access for comments and replies
+ * ============================================================================
+ *
+ * Responsibility: talking to the database, and nothing else. Business rules
+ * (who may edit, what a valid reply is, visibility) live in CommentService;
+ * the response shape lives in comment.mapper.ts.
+ *
+ * Comments and replies share one table ("comment_entity"):
+ *   - type = COMMENT, parentCommentId = NULL   → written on the post
+ *   - type = REPLY,   parentCommentId = <id>   → written on that comment
+ */
+import { Injectable } from '@nestjs/common';
+import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
 import { CommentType } from './comment-type.enum';
-import { User } from '../user/user.entity';
-import { PostEntity } from '../post/post.entity';
-import { UpdateCommentDto } from './dto/update-comment.dto';
-import { UserSimpleInfoDto } from '../user/dto/user-simple-info.dto';
+import { CommentEntity } from './comment.entity';
+
+/** Options for loading one page of comments or replies. */
+export interface CommentPageQuery {
+  /** The post the comments belong to. */
+  postId: number;
+  /** 1-based page number (page 1 = newest). */
+  page: number;
+  /** How many comments one page contains. */
+  limit: number;
+}
 
 @Injectable()
 export class CommentRepository extends Repository<CommentEntity> {
-  private logger = new Logger('CommentRepository');
-
   constructor(dataSource: DataSource) {
     super(CommentEntity, dataSource.createEntityManager());
   }
 
+  // ==========================================================================
+  //  Queries used by CommentService
+  // ==========================================================================
+
   /**
-   * Sets `childrenCount` (number of replies) on each comment with a single grouped query.
-   * Replaces `loadRelationCountAndMap`, which was removed in TypeORM 1.0.
+   * One page of the TOP-LEVEL comments of a post, newest first, each with the
+   * number of replies it has.
+   *
+   * @returns `[comments on this page, total number of top-level comments]`
+   */
+  async findCommentsPage({
+    postId,
+    page,
+    limit,
+  }: CommentPageQuery): Promise<[CommentEntity[], number]> {
+    const [comments, total] = await this.paginate(
+      this.commentWithAuthorQuery()
+        .where('post.id = :postId', { postId })
+        .andWhere('comment.type = :type', { type: CommentType.Comment }),
+      page,
+      limit,
+    ).getManyAndCount();
+
+    await this.attachChildrenCounts(comments);
+    return [comments, total];
+  }
+
+  /**
+   * One page of the REPLIES to one comment, newest first.
+   * (Replies cannot have replies themselves, so no counts are loaded; the
+   * mapper reports 0.)
+   *
+   * @returns `[replies on this page, total number of replies]`
+   */
+  async findRepliesPage(
+    parentCommentId: number,
+    { postId, page, limit }: CommentPageQuery,
+  ): Promise<[CommentEntity[], number]> {
+    return this.paginate(
+      this.commentWithAuthorQuery()
+        .where('post.id = :postId', { postId })
+        .andWhere('comment.parentCommentId = :parentCommentId', {
+          parentCommentId,
+        })
+        .andWhere('comment.type = :type', { type: CommentType.Reply }),
+      page,
+      limit,
+    ).getManyAndCount();
+  }
+
+  /**
+   * A single comment with its author, its post id and its number of replies.
+   * Returns `null` when no comment has this id.
+   */
+  async findOneWithAuthor(id: number): Promise<CommentEntity | null> {
+    const comment = await this.commentWithAuthorQuery()
+      .where('comment.id = :id', { id })
+      .getOne();
+
+    if (comment) {
+      await this.attachChildrenCounts([comment]);
+    }
+    return comment;
+  }
+
+  // ==========================================================================
+  //  Internal helpers
+  // ==========================================================================
+
+  /**
+   * The common starting point for every comment query: the comment joined
+   * with its author (public columns only) and with the ID of its post.
+   *
+   * Only `post.id` is selected from the post. The old queries loaded the
+   * whole post row (including its arrays of likes and bookmarks) for every
+   * comment, although only the id was used.
+   */
+  private commentWithAuthorQuery(): SelectQueryBuilder<CommentEntity> {
+    return this.createQueryBuilder('comment')
+      .leftJoin('comment.user', 'user')
+      .leftJoin('comment.post', 'post')
+      .select([
+        'comment',
+        'user.email',
+        'user.username',
+        'user.thumbnail',
+        'post.id',
+      ]);
+  }
+
+  /** Newest first, then cut out the requested page. */
+  private paginate(
+    query: SelectQueryBuilder<CommentEntity>,
+    page: number,
+    limit: number,
+  ): SelectQueryBuilder<CommentEntity> {
+    return query
+      .orderBy('comment.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
+  }
+
+  /**
+   * Fills in `childrenCount` (number of replies) on each comment with ONE
+   * grouped query for all of them:
+   *
+   *   SELECT "parentCommentId", COUNT(*) FROM comment_entity
+   *   WHERE "parentCommentId" IN (1, 2, 3) GROUP BY "parentCommentId"
+   *
+   * Comments without replies do not appear in the result, so they get 0.
+   * (TypeORM 0.x did this with `loadRelationCountAndMap`, removed in 1.0.)
    */
   private async attachChildrenCounts(comments: CommentEntity[]): Promise<void> {
     if (comments.length === 0) return;
@@ -35,180 +157,12 @@ export class CommentRepository extends Repository<CommentEntity> {
         .groupBy('reply.parentCommentId')
         .getRawMany();
 
+    // PostgreSQL returns COUNT(*) as a string, hence Number().
     const countByParentId = new Map(
       rows.map((row) => [Number(row.parentCommentId), Number(row.count)]),
     );
     for (const comment of comments) {
       comment.childrenCount = countByParentId.get(comment.id) ?? 0;
-    }
-  }
-
-  async createComment(
-    createCommentDto: CreateCommentDto,
-    user: User,
-    post: PostEntity,
-  ): Promise<CommentInfoDto> {
-    const { content, parentCommentId, parentCommentAuthor } = createCommentDto;
-
-    const createdAt = currentSeoulTimestamp(); // Seoul local time, see common/utils/date.util.ts
-    const date = new Date(createdAt);
-
-    const comment = this.create({
-      content,
-      type:
-        createCommentDto.parentCommentId == null
-          ? CommentType.Comment
-          : CommentType.Reply,
-      parentCommentId,
-      parentCommentAuthor,
-      post,
-      user,
-      createdAt: date,
-      updatedAt: date,
-    });
-
-    await this.save(comment);
-
-    this.logger.verbose(`${user.email}'s new comment has created.`);
-
-    const created = new CommentInfoDto();
-    created.id = comment.id;
-    created.content = comment.content;
-    created.type = comment.type;
-    created.parentCommentId = comment.parentCommentId;
-    created.parentCommentAuthor = comment.parentCommentAuthor;
-    created.postId = comment.post.id;
-    created.user = new UserSimpleInfoDto();
-    created.user.email = comment.user.email;
-    created.user.thumbnail = comment.user.thumbnail;
-    created.user.username = comment.user.username;
-    created.createdAt = comment.createdAt;
-    created.updatedAt = comment.updatedAt;
-
-    return created;
-  }
-
-  // Search only comments
-  async getCommentList(
-    postId: number,
-    page: number,
-    limit: number,
-  ): Promise<CommentInfoListDto> {
-    const query = this.createQueryBuilder('comment_entity')
-      .leftJoinAndSelect('comment_entity.post', 'post')
-      .leftJoinAndSelect('comment_entity.user', 'user')
-      .where('comment_entity.postId = :postId', { postId })
-      .andWhere('comment_entity.type = :type', { type: CommentType.Comment })
-      .orderBy('comment_entity.createdAt', 'DESC')
-      .skip((page - 1) * limit)
-      .take(limit);
-
-    const [comments, total] = await query.getManyAndCount();
-    await this.attachChildrenCounts(comments);
-
-    const commentList: CommentInfoDto[] = comments.map(
-      (comment: CommentEntity) => {
-        const commentInfo: CommentInfoDto = new CommentInfoDto();
-        commentInfo.id = comment.id;
-        commentInfo.content = comment.content;
-        commentInfo.type = comment.type;
-        commentInfo.parentCommentId = comment.parentCommentId;
-        commentInfo.parentCommentAuthor = comment.parentCommentAuthor;
-        commentInfo.postId = comment.post.id;
-        commentInfo.user = new UserSimpleInfoDto();
-        commentInfo.user.email = comment.user.email;
-        commentInfo.user.thumbnail = comment.user.thumbnail;
-        commentInfo.user.username = comment.user.username;
-        commentInfo.createdAt = comment.createdAt;
-        commentInfo.updatedAt = comment.updatedAt;
-        commentInfo.childrenCount = comment.childrenCount;
-        return commentInfo;
-      },
-    );
-
-    return { comments: commentList, total };
-  }
-
-  // Search only replies by parentCommentId
-  async getReplyListByParentCommentId(
-    parentCommentId: number,
-    postId: number,
-    page: number,
-    limit: number,
-  ): Promise<CommentInfoListDto> {
-    const query = this.createQueryBuilder('comment_entity')
-      .leftJoinAndSelect('comment_entity.post', 'post')
-      .leftJoinAndSelect('comment_entity.user', 'user')
-      .where('comment_entity.postId = :postId', { postId })
-      .andWhere('comment_entity.parentCommentId = :parentCommentId', {
-        parentCommentId,
-      })
-      .andWhere('comment_entity.type = :type', { type: CommentType.Reply })
-      .orderBy('comment_entity.createdAt', 'DESC')
-      .skip((page - 1) * limit)
-      .take(limit);
-
-    const [comments, total] = await query.getManyAndCount();
-
-    const commentList: CommentInfoDto[] = comments.map(
-      (comment: CommentEntity) => {
-        const commentInfo: CommentInfoDto = new CommentInfoDto();
-        commentInfo.id = comment.id;
-        commentInfo.content = comment.content;
-        commentInfo.type = comment.type;
-        commentInfo.parentCommentId = comment.parentCommentId;
-        commentInfo.parentCommentAuthor = comment.parentCommentAuthor;
-        commentInfo.postId = comment.post.id;
-        commentInfo.user = new UserSimpleInfoDto();
-        commentInfo.user.email = comment.user.email;
-        commentInfo.user.thumbnail = comment.user.thumbnail;
-        commentInfo.user.username = comment.user.username;
-        commentInfo.createdAt = comment.createdAt;
-        commentInfo.updatedAt = comment.updatedAt;
-        return commentInfo;
-      },
-    );
-
-    return { comments: commentList, total };
-  }
-
-  async updateComment(
-    updateCommentDto: UpdateCommentDto,
-    user: User,
-  ): Promise<CommentInfoDto> {
-    const { id, content } = updateCommentDto;
-    const comment = await this.findOne({
-      where: { id },
-      relations: { user: true, post: true, childComments: true },
-    });
-
-    if (comment) {
-      if (comment.user.email != user.email) {
-        throw new UnauthorizedException(
-          'You do not have permission to update this comment',
-        );
-      } else {
-        const updatedAt = currentSeoulTimestamp(); // Seoul local time, see common/utils/date.util.ts
-        comment.updatedAt = new Date(updatedAt);
-        comment.content = content;
-        await this.save(comment);
-
-        const updatedComment = new CommentInfoDto();
-        updatedComment.id = comment.id;
-        updatedComment.content = comment.content;
-        updatedComment.type = comment.type;
-        updatedComment.parentCommentId = comment.parentCommentId;
-        updatedComment.parentCommentAuthor = comment.parentCommentAuthor;
-        updatedComment.postId = comment.post.id;
-        updatedComment.user = new UserSimpleInfoDto();
-        updatedComment.user.email = comment.user.email;
-        updatedComment.user.thumbnail = comment.user.thumbnail;
-        updatedComment.user.username = comment.user.username;
-        updatedComment.createdAt = comment.createdAt;
-        updatedComment.updatedAt = comment.updatedAt;
-        updatedComment.childrenCount = comment.childComments.length;
-        return updatedComment;
-      }
     }
   }
 }

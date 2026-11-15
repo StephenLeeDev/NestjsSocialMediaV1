@@ -1,8 +1,22 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty } from 'class-validator';
 import { CommentType } from '../comment-type.enum';
 import { UserSimpleInfoDto } from '../../user/dto/user-simple-info.dto';
 
+/**
+ * ============================================================================
+ *  Comment response DTOs
+ * ============================================================================
+ *
+ * What the API SENDS BACK for comments and replies. Every CommentInfoDto is
+ * built by `toCommentInfoDto` in comment.mapper.ts, so all endpoints return
+ * the same shape. The Flutter app's CommentModel reads these field names.
+ *
+ * (These are response classes only. They used to carry validation decorators,
+ * which made no sense: responses are never validated. Request bodies are
+ * described by CreateCommentDto / UpdateCommentDto.)
+ */
+
+/** One comment or reply. */
 export class CommentInfoDto {
   @ApiProperty({
     example: 1,
@@ -17,64 +31,68 @@ export class CommentInfoDto {
   content: string;
 
   @ApiProperty({
+    enum: CommentType,
     example: CommentType.Comment,
-    description: `The type of the comment.`,
+    description: `COMMENT = written on the post, REPLY = written on a comment.`,
   })
   type: CommentType;
 
   @ApiProperty({
     example: 1,
-    description: `The ID of the parent comment for this reply. It can be null.`,
+    nullable: true,
+    description: `For a reply: the ID of the comment it replies to. null for comments.`,
   })
-  parentCommentId: number;
+  parentCommentId: number | null;
 
   @ApiProperty({
     example: 'john@gmail.com',
-    description: `The email of the parent comment's author for this reply. It can be null.`,
+    nullable: true,
+    description: `For a reply: the email of the parent comment's author. null for comments.`,
   })
-  parentCommentAuthor: string;
+  parentCommentAuthor: string | null;
 
   @ApiProperty({
     example: 1,
-    description: `The ID of the post for this comment.`,
+    description: `The ID of the post this comment belongs to.`,
   })
-  @IsNotEmpty()
   postId: number;
 
   @ApiProperty({
-    example: `john@gmail.com`,
-    description: `The email of its author.`,
+    type: UserSimpleInfoDto,
+    description: `The author of the comment.`,
   })
-  @IsNotEmpty()
   user: UserSimpleInfoDto;
 
   @ApiProperty({
     example: `2022-06-12 06:00:22.206Z`,
-    description: `The created date the comment.`,
+    description: `When the comment was written.`,
   })
-  @IsNotEmpty()
   createdAt: Date;
 
   @ApiProperty({
     example: `2022-06-12 06:00:22.206Z`,
-    description: `The updated date the comment.`,
+    description: `When the comment was last edited.`,
   })
-  @IsNotEmpty()
   updatedAt: Date;
 
   @ApiProperty({
     example: 3,
-    description: `The replies count of the comment`,
+    description: `How many replies the comment has (always 0 for replies).`,
   })
   childrenCount: number;
 }
 
+/** One page of comments or replies. */
 export class CommentInfoListDto {
-  @ApiProperty({ type: [CommentInfoDto] })
+  @ApiProperty({
+    type: [CommentInfoDto],
+    description: `The comments on this page.`,
+  })
   comments: CommentInfoDto[];
+
   @ApiProperty({
     example: 10,
-    description: `The comment's total count can call`,
+    description: `The total number of comments in the WHOLE list (all pages), used for paging.`,
   })
   total: number;
 }

@@ -11,6 +11,16 @@ import { User } from '../user/user.entity';
 import { CommentType } from './comment-type.enum';
 import { PostEntity } from '../post/post.entity';
 
+/**
+ * A comment or reply row in the database (table "comment_entity").
+ *
+ * Comments and replies share this table:
+ *   - COMMENT : written on a post        → parentCommentId is NULL
+ *   - REPLY   : written on a comment     → parentCommentId is that comment's id
+ *
+ * What the API returns is a different shape (CommentInfoDto), produced by
+ * comment.mapper.ts.
+ */
 @Entity()
 export class CommentEntity extends BaseEntity {
   @PrimaryGeneratedColumn()
@@ -22,11 +32,16 @@ export class CommentEntity extends BaseEntity {
   @Column({ type: 'enum', enum: CommentType })
   type: CommentType;
 
-  @Column({ nullable: true })
-  parentCommentId: number;
+  // For a reply: the id of the top-level comment it answers. NULL for comments.
+  // The column type is written out because TypeORM cannot reliably infer it
+  // from a `number | null` property (same reason as PostEntity.status).
+  @Column({ type: 'integer', nullable: true })
+  parentCommentId: number | null;
 
-  @Column({ nullable: true })
-  parentCommentAuthor: string;
+  // For a reply: the email of the parent comment's author (shown as "@name"
+  // in the app). Copied from the parent by CommentService. NULL for comments.
+  @Column({ type: 'varchar', nullable: true })
+  parentCommentAuthor: string | null;
 
   // The parent comment of a REPLY (null for top-level comments).
   //
@@ -58,7 +73,11 @@ export class CommentEntity extends BaseEntity {
   @JoinColumn([{ name: 'postId', referencedColumnName: 'id' }])
   post: PostEntity;
 
-  @ManyToOne(() => User, (user) => user.posts, { eager: false })
+  // The author of the comment.
+  // (This used to name `user.posts` as its inverse side, which is the list of
+  // POSTS, not comments. The inverse side is optional and no code navigates
+  // from a user to their comments, so it is simply left out. Schema unchanged.)
+  @ManyToOne(() => User, { eager: false })
   @JoinColumn([{ name: 'userEmail', referencedColumnName: 'email' }])
   user: User;
 
@@ -68,5 +87,6 @@ export class CommentEntity extends BaseEntity {
   @Column()
   updatedAt: Date;
 
-  childrenCount: number;
+  // NOT a database column. Filled in by CommentRepository (number of replies).
+  childrenCount?: number;
 }
