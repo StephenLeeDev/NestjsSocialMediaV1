@@ -8,7 +8,7 @@
  * (replies left out `childrenCount`). One function keeps every response
  * identical. See post.mapper.ts for the same pattern.
  */
-import { UserSimpleInfoDto } from '../user/dto/user-simple-info.dto';
+import { toUserSimpleInfoDto } from '../user/user.mapper';
 import { CommentEntity } from './comment.entity';
 import { CommentInfoDto } from './dto/comment-info.dto';
 
@@ -21,12 +21,6 @@ import { CommentInfoDto } from './dto/comment-info.dto';
  *                CommentRepository and treated as 0 when missing.
  */
 export function toCommentInfoDto(comment: CommentEntity): CommentInfoDto {
-  // Only the public parts of the author are exposed.
-  const author = new UserSimpleInfoDto();
-  author.email = comment.user.email;
-  author.username = comment.user.username;
-  author.thumbnail = comment.user.thumbnail;
-
   const dto = new CommentInfoDto();
   dto.id = comment.id;
   dto.content = comment.content;
@@ -36,7 +30,8 @@ export function toCommentInfoDto(comment: CommentEntity): CommentInfoDto {
   dto.parentCommentId = comment.parentCommentId ?? null;
   dto.parentCommentAuthor = comment.parentCommentAuthor ?? null;
   dto.postId = comment.post.id;
-  dto.user = author;
+  // Only the public parts of the author are exposed.
+  dto.user = toUserSimpleInfoDto(comment.user);
   dto.createdAt = comment.createdAt;
   dto.updatedAt = comment.updatedAt;
   // Not a database column; computed by CommentRepository.

@@ -1,53 +1,16 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { UserProfileDto } from './user-profile.dto';
 
-export class UserInfoDto {
-  @ApiProperty({
-    example: 'john@gmail.com',
-    description: `User's email address`,
-  })
-  email: string;
-
-  @ApiProperty({
-    example: 'John',
-    description: `User's name`,
-  })
-  username: string;
-
-  @ApiProperty({
-    example: 'localhost:3000/public/images/default_thumbnail.png',
-    description: `User's thumbnail url`,
-  })
-  thumbnail: string;
-
-  // TODO : Low priority
-  // TODO : Refactor this field's type to number from array
+/**
+ * The signed-in user's OWN profile (GET /user).
+ *
+ * Same public fields as every profile (see UserProfileDto), plus the
+ * private bookmark list, which only its owner may see.
+ */
+export class UserInfoDto extends UserProfileDto {
   @ApiProperty({
     example: [1, 2],
-    description: `The list of post IDs that user has bookmarked`,
+    description: `IDs of the posts you bookmarked (private, only in your own profile).`,
   })
   bookMarks: number[];
-
-  @ApiProperty({
-    example: `I'm hungry`,
-    description: `User's status message`,
-  })
-  statusMessage: string;
-
-  @ApiProperty({
-    example: 5,
-    description: `The number of user's feed`,
-  })
-  totalPostCount: number;
-
-  @ApiProperty({
-    example: 5,
-    description: `The number of user's followers`,
-  })
-  followerCount: number;
-
-  @ApiProperty({
-    example: 7,
-    description: `The number of user's followings`,
-  })
-  followingCount: number;
 }
