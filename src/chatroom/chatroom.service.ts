@@ -33,7 +33,7 @@ export class ChatRoomService {
     /// The chatroom already exists
     /// Return this directly
     if (found) {
-      var room = new ChatRoomDto();
+      const room = new ChatRoomDto();
       room.id = found.id;
       room.name = receiver.username;
       room.participants = [sender.email, receiverEmail];
@@ -53,7 +53,7 @@ export class ChatRoomService {
         .tz('Asia/Seoul')
         .format('YYYY-MM-DD HH:mm:ss.SSS'); // You can set your time zone here
 
-      let chatroom = this.chatRoomRepository.create({
+      const chatroom = this.chatRoomRepository.create({
         createdAt,
         updatedAt: createdAt,
       });
@@ -74,7 +74,7 @@ export class ChatRoomService {
       await this.userChatRepository.save(senderUserChatroom);
       await this.userChatRepository.save(receiverUserChatroom);
 
-      var room = new ChatRoomDto();
+      const room = new ChatRoomDto();
       room.id = chatroom.id;
       room.name = receiver.username;
       room.participants = [sender.email, receiverEmail];
@@ -94,14 +94,14 @@ export class ChatRoomService {
     page: number,
     limit: number,
   ): Promise<ChatRoomListDto> {
-    var chatRooms = await this.userChatRepository.getChatRoomList(
+    const chatRooms = await this.userChatRepository.getChatRoomList(
       user,
       page,
       limit,
     );
 
     /// Find latest message
-    for (var chatRoomDto of chatRooms.list) {
+    for (const chatRoomDto of chatRooms.list) {
       const latestMessage =
         await this.messageRepository.findLastMessageByChatRoomId(
           chatRoomDto.id,
@@ -110,7 +110,7 @@ export class ChatRoomService {
     }
 
     /// Find chat partner
-    for (var chatRoomDto of chatRooms.list) {
+    for (const chatRoomDto of chatRooms.list) {
       const partner = await this.userChatRepository.findChatPartnerByChatRoomId(
         chatRoomDto.id,
         user,

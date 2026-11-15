@@ -44,7 +44,7 @@ export class UserRepository extends Repository<User> {
     const [{ totalPostCount }] = await post.getRawMany();
 
     if (user) {
-      let userInfo: UserInfoDto = new UserInfoDto();
+      const userInfo: UserInfoDto = new UserInfoDto();
       userInfo.email = user.email;
       userInfo.username = user.username;
       userInfo.thumbnail = user.thumbnail;
@@ -68,7 +68,7 @@ export class UserRepository extends Repository<User> {
       throw new Error('User not found');
     }
 
-    var { bookMarks } = user;
+    let { bookMarks } = user;
 
     // If it was previously bookmarked, cancel the bookmark
     if (bookMarks.includes(postId)) {

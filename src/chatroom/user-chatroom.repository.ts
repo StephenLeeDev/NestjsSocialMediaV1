@@ -4,7 +4,6 @@ import { UserChatRoomEntity } from './user-chatroom.entity';
 import { User } from '../user/user.entity';
 import { ChatRoomEntity } from './chatroom.entity';
 import { ChatRoomDto, ChatRoomListDto } from './dto/chatroom.dto';
-import { MessageEntity } from '../message/message.entity';
 
 @Injectable()
 export class UserChatRoomRepository extends Repository<UserChatRoomEntity> {
@@ -77,7 +76,6 @@ export class UserChatRoomRepository extends Repository<UserChatRoomEntity> {
       (item: ChatRoomEntity) => {
         const chatRoomInfo: ChatRoomDto = new ChatRoomDto();
         chatRoomInfo.id = item.id;
-        chatRoomInfo.participants;
         chatRoomInfo.createdAt = item.createdAt;
         chatRoomInfo.updatedAt = item.updatedAt;
         return chatRoomInfo;

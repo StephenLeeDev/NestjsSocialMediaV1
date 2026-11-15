@@ -148,9 +148,7 @@ export class PostService {
     const count = 10;
     const user = await this.userRepository.findOneBy({ email });
 
-    let users = [];
-    let duplicatedUsers = [];
-    let shuffledUsers = [];
+    let shuffledUsers: User[] = [];
 
     /// Create dummy posts just specific user
     if (user) {
@@ -160,14 +158,14 @@ export class PostService {
     }
     /// Create dummy posts for random users
     else {
-      users = await this.userRepository.find({ take: count });
+      let users = await this.userRepository.find({ take: count });
 
       if (users.length < count) {
         await this.authRepository.createDummyUsers();
         users = await this.userRepository.find({ take: count });
       }
 
-      duplicatedUsers = [...users, ...users.slice(0, count - users.length)];
+      const duplicatedUsers = [...users, ...users.slice(0, count - users.length)];
       shuffledUsers = shuffleArray(duplicatedUsers);
     }
 

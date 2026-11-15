@@ -37,7 +37,7 @@ export class MessageRepository extends Repository<MessageEntity> {
 
     await this.save(message);
 
-    var created = new MessageInfoDto();
+    const created = new MessageInfoDto();
     created.id = message.id;
     created.content = message.content;
     created.type = message.type;

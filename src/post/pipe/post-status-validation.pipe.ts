@@ -8,7 +8,7 @@ import { PostStatus } from '../post-status.enum';
 export class PostStatusValidationPipe implements PipeTransform {
   readonly StatusOptions = [PostStatus.PRIVATE, PostStatus.PUBLIC];
 
-  transform(value: any, metadata: ArgumentMetadata) {
+  transform(value: any, _metadata: ArgumentMetadata) {
     value = value.toUpperCase();
 
     if (!this.isStatusValid(value)) {

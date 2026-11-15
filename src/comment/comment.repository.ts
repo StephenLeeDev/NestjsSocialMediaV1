@@ -73,7 +73,7 @@ export class CommentRepository extends Repository<CommentEntity> {
 
     this.logger.verbose(`${user.email}'s new comment has created.`);
 
-    var created = new CommentInfoDto();
+    const created = new CommentInfoDto();
     created.id = comment.id;
     created.content = comment.content;
     created.type = comment.type;
@@ -197,7 +197,7 @@ export class CommentRepository extends Repository<CommentEntity> {
         comment.content = content;
         await this.save(comment);
 
-        var updatedComment = new CommentInfoDto();
+        const updatedComment = new CommentInfoDto();
         updatedComment.id = comment.id;
         updatedComment.content = comment.content;
         updatedComment.type = comment.type;

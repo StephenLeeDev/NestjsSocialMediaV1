@@ -8,7 +8,7 @@ import { AuthSocialType } from '../auth-social-type-validation.enum';
 export class AuthSocialTypeValidationPipe implements PipeTransform {
   readonly AuthSocialTypeOptions = [AuthSocialType.GOOGLE];
 
-  transform(value: any, metadata: ArgumentMetadata) {
+  transform(value: any, _metadata: ArgumentMetadata) {
     if (value === null || value === undefined) {
       throw new BadRequestException('Invalid socialType');
     }

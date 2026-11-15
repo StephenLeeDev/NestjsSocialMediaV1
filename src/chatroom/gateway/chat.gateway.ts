@@ -34,7 +34,7 @@ export class ChatGateway
 
   private broadcast(event, client, message: any) {
     console.log(`broadcast`);
-    for (let id in this.server.sockets)
+    for (const id in this.server.sockets)
       if (id !== client.id) this.server.sockets[id].emit(event, message);
   }
 
@@ -46,7 +46,7 @@ export class ChatGateway
     this.broadcast(room, client, [nickname, message]);
   }
 
-  afterInit(server: Server) {
+  afterInit(_server: Server) {
     this.logger.log('Init');
   }
 
@@ -54,7 +54,7 @@ export class ChatGateway
     this.logger.log(`Client Disconnected : ${client.id}`);
   }
 
-  handleConnection(client: Socket, ...args: any[]) {
+  handleConnection(client: Socket, ..._args: any[]) {
     this.logger.log(`Client Connected : ${client.id}`);
   }
 }

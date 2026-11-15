@@ -21,7 +21,7 @@ export class FollowService {
     const user = await this.userRepository.findOneBy({ email: following });
     await this.followRepository.createFollow(follower, user);
 
-    let singleIntegerDto: SingleIntegerDto = new SingleIntegerDto();
+    const singleIntegerDto: SingleIntegerDto = new SingleIntegerDto();
     singleIntegerDto.value =
       await this.followRepository.getFollowerCount(following);
     return singleIntegerDto;
@@ -45,7 +45,7 @@ export class FollowService {
   ): Promise<SingleIntegerDto> {
     await this.followRepository.cancelFollowing(myEmail, email);
 
-    let singleIntegerDto: SingleIntegerDto = new SingleIntegerDto();
+    const singleIntegerDto: SingleIntegerDto = new SingleIntegerDto();
     singleIntegerDto.value =
       await this.followRepository.getFollowerCount(email);
     return singleIntegerDto;

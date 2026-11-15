@@ -26,7 +26,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { UserInfoDto } from './dto/user-info.dto';
 import { GetUser } from '../auth/get-user.decorator';
 import { User } from './user.entity';
-import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import {
   editFileName,
