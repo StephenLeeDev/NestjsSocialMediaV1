@@ -12,6 +12,7 @@
  *   - POST   /post/:postId/like     : like / unlike (toggle)
  *   - PATCH  /post/description      : edit the description (author only)
  *   - DELETE /post/:id              : delete a post (author only)
+ *   - POST   /post/test/dummy       : development helper that generates dummy posts
  *
  * Two users are used throughout:
  *   - "author" writes most of the posts
@@ -20,7 +21,15 @@
  */
 import { NestExpressApplication } from '@nestjs/platform-express';
 import request from 'supertest';
-import { bearer, createComment, createPost, createTestApp, resetDatabase, signIn, TEST_IMAGE } from './utils/test-app';
+import {
+  bearer,
+  createComment,
+  createPost,
+  createTestApp,
+  resetDatabase,
+  signIn,
+  TEST_IMAGE,
+} from './utils/test-app';
 
 describe('Post (e2e)', () => {
   let app: NestExpressApplication;
@@ -83,18 +92,31 @@ describe('Post (e2e)', () => {
     });
 
     it('GET /post paginates all public posts, newest first', async () => {
-      const res = await request(server).get('/post').query({ page: 1, limit: 2 }).set(bearer(token)).expect(200);
+      const res = await request(server)
+        .get('/post')
+        .query({ page: 1, limit: 2 })
+        .set(bearer(token))
+        .expect(200);
 
       // `total` counts every post, while `posts` only holds this page (2 items).
       expect(res.body.total).toBe(3);
-      expect(res.body.posts.map((post) => post.description)).toEqual(['third', 'second']);
+      expect(res.body.posts.map((post) => post.description)).toEqual([
+        'third',
+        'second',
+      ]);
     });
 
     it("GET /post/my returns only the current user's posts", async () => {
-      const res = await request(server).get('/post/my').query({ page: 1, limit: 10 }).set(bearer(token)).expect(200);
+      const res = await request(server)
+        .get('/post/my')
+        .query({ page: 1, limit: 10 })
+        .set(bearer(token))
+        .expect(200);
 
       expect(res.body.total).toBe(2);
-      expect(res.body.posts.every((post) => post.user.email === 'author@gmail.com')).toBe(true);
+      expect(
+        res.body.posts.every((post) => post.user.email === 'author@gmail.com'),
+      ).toBe(true);
     });
 
     it('GET /post/user returns the posts of the given user', async () => {
@@ -114,9 +136,15 @@ describe('Post (e2e)', () => {
       const post = await createPost(app, token);
       // One top-level comment and one reply to it.
       const comment = await createComment(app, otherToken, post.id);
-      await createComment(app, token, post.id, 'reply', { id: comment.id, authorEmail: 'other@gmail.com' });
+      await createComment(app, token, post.id, 'reply', {
+        id: comment.id,
+        authorEmail: 'other@gmail.com',
+      });
 
-      const res = await request(server).get(`/post/${post.id}`).set(bearer(token)).expect(200);
+      const res = await request(server)
+        .get(`/post/${post.id}`)
+        .set(bearer(token))
+        .expect(200);
 
       // commentCount includes replies: 1 comment + 1 reply = 2.
       expect(res.body).toMatchObject({ id: post.id, commentCount: 2 });
@@ -136,15 +164,26 @@ describe('Post (e2e)', () => {
       const post = await createPost(app, token);
 
       // 1st call: "other" likes the post.
-      let res = await request(server).post(`/post/${post.id}/like`).set(bearer(otherToken)).send({ postId: post.id }).expect(201);
+      let res = await request(server)
+        .post(`/post/${post.id}/like`)
+        .set(bearer(otherToken))
+        .send({ postId: post.id })
+        .expect(201);
       expect(res.body).toEqual({ likeCount: 1 });
 
       // From "other"'s point of view the post is now liked.
-      const feed = await request(server).get(`/post/${post.id}`).set(bearer(otherToken)).expect(200);
+      const feed = await request(server)
+        .get(`/post/${post.id}`)
+        .set(bearer(otherToken))
+        .expect(200);
       expect(feed.body).toMatchObject({ likeCount: 1, isLiked: true });
 
       // 2nd call: the same user likes again, which removes the like.
-      res = await request(server).post(`/post/${post.id}/like`).set(bearer(otherToken)).send({ postId: post.id }).expect(201);
+      res = await request(server)
+        .post(`/post/${post.id}/like`)
+        .set(bearer(otherToken))
+        .send({ postId: post.id })
+        .expect(201);
       expect(res.body).toEqual({ likeCount: 0 });
     });
   });
@@ -180,9 +219,15 @@ describe('Post (e2e)', () => {
     it("deletes the author's own post", async () => {
       const post = await createPost(app, token);
 
-      await request(server).delete(`/post/${post.id}`).set(bearer(token)).expect(200);
+      await request(server)
+        .delete(`/post/${post.id}`)
+        .set(bearer(token))
+        .expect(200);
       // It is really gone.
-      await request(server).get(`/post/${post.id}`).set(bearer(token)).expect(404);
+      await request(server)
+        .get(`/post/${post.id}`)
+        .set(bearer(token))
+        .expect(404);
     });
 
     it("does not delete someone else's post", async () => {
@@ -190,8 +235,14 @@ describe('Post (e2e)', () => {
 
       // The delete query only matches posts owned by the caller, so for anyone
       // else the post "does not exist" (404) and nothing is deleted.
-      await request(server).delete(`/post/${post.id}`).set(bearer(otherToken)).expect(404);
-      await request(server).get(`/post/${post.id}`).set(bearer(token)).expect(200);
+      await request(server)
+        .delete(`/post/${post.id}`)
+        .set(bearer(otherToken))
+        .expect(404);
+      await request(server)
+        .get(`/post/${post.id}`)
+        .set(bearer(token))
+        .expect(200);
     });
 
     it('deletes a post that has comments, together with its comments', async () => {
@@ -200,11 +251,73 @@ describe('Post (e2e)', () => {
       // the post via `onDelete: 'CASCADE'` in `CommentEntity`.
       const post = await createPost(app, token);
       const comment = await createComment(app, otherToken, post.id);
-      await createComment(app, token, post.id, 'reply', { id: comment.id, authorEmail: 'other@gmail.com' });
+      await createComment(app, token, post.id, 'reply', {
+        id: comment.id,
+        authorEmail: 'other@gmail.com',
+      });
 
-      await request(server).delete(`/post/${post.id}`).set(bearer(token)).expect(200);
+      await request(server)
+        .delete(`/post/${post.id}`)
+        .set(bearer(token))
+        .expect(200);
 
-      await request(server).get(`/post/${post.id}`).set(bearer(token)).expect(404);
+      await request(server)
+        .get(`/post/${post.id}`)
+        .set(bearer(token))
+        .expect(404);
+    });
+  });
+
+  describe('POST /post/test/dummy (development helper)', () => {
+    // This endpoint fills the database with 10 random posts for manual testing.
+    // It saves the posts in the BACKGROUND (setTimeout) and answers right away,
+    // so the test waits until all 10 posts exist before checking anything.
+
+    /**
+     * Polls the feed until it contains `expected` posts, or fails after ~3 s.
+     * Needed because the endpoint returns before its background saves finish.
+     */
+    async function waitForPostCount(expected: number): Promise<number> {
+      let total = 0;
+      for (let attempt = 0; attempt < 30; attempt++) {
+        const res = await request(server)
+          .get('/post')
+          .query({ page: 1, limit: 1 })
+          .set(bearer(token))
+          .expect(200);
+        total = res.body.total;
+        if (total >= expected) break;
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+      return total;
+    }
+
+    beforeEach(async () => {
+      // Exact post counts are asserted below, so start from an empty database.
+      await resetDatabase(app);
+      token = await signIn(app, 'author@gmail.com', 'Author');
+    });
+
+    it("creates 10 posts for the given user's email", async () => {
+      await request(server)
+        .post('/post/test/dummy')
+        .query({ email: 'author@gmail.com' })
+        .set(bearer(token))
+        .expect(201);
+
+      expect(await waitForPostCount(10)).toBe(10);
+    });
+
+    it('creates 10 posts for random dummy users when no email is given', async () => {
+      // Regression test: without `email`, the service looked a user up with
+      // `findOneBy({ email: undefined })`. TypeORM 1.x rejects `undefined` in
+      // where conditions (older versions silently ignored it), so this returned 500.
+      await request(server)
+        .post('/post/test/dummy')
+        .set(bearer(token))
+        .expect(201);
+
+      expect(await waitForPostCount(10)).toBe(10);
     });
   });
 });

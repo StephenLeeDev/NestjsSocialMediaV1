@@ -33,7 +33,15 @@ import { configureApp } from '../../src/app.setup';
  * Path to a small JPEG that ships with the repository (one of the dummy images).
  * Used whenever a test needs to upload a file (post images, profile thumbnail).
  */
-export const TEST_IMAGE = join(__dirname, '..', '..', 'static', 'images', 'dummy', '1.jpeg');
+export const TEST_IMAGE = join(
+  __dirname,
+  '..',
+  '..',
+  'static',
+  'images',
+  'dummy',
+  '1.jpeg',
+);
 
 /**
  * Boots the REAL application (the same `AppModule` that `main.ts` uses) for tests.
@@ -51,8 +59,12 @@ export const TEST_IMAGE = join(__dirname, '..', '..', 'static', 'images', 'dummy
  * The database used is configured in `test/setup-env.ts`.
  */
 export async function createTestApp(): Promise<NestExpressApplication> {
-  const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
-  const app = moduleRef.createNestApplication<NestExpressApplication>({ logger: ['error'] });
+  const moduleRef = await Test.createTestingModule({
+    imports: [AppModule],
+  }).compile();
+  const app = moduleRef.createNestApplication<NestExpressApplication>({
+    logger: ['error'],
+  });
   configureApp(app);
   await app.init();
   return app;
@@ -72,9 +84,13 @@ export async function createTestApp(): Promise<NestExpressApplication> {
  * Safety: `test/setup-env.ts` refuses to run unless the database name ends
  * with "-test", so this can never wipe the development database.
  */
-export async function resetDatabase(app: NestExpressApplication): Promise<void> {
+export async function resetDatabase(
+  app: NestExpressApplication,
+): Promise<void> {
   const dataSource = app.get(DataSource);
-  const tables = dataSource.entityMetadatas.map((meta) => `"${meta.tableName}"`).join(', ');
+  const tables = dataSource.entityMetadatas
+    .map((meta) => `"${meta.tableName}"`)
+    .join(', ');
   await dataSource.query(`TRUNCATE ${tables} RESTART IDENTITY CASCADE`);
 }
 
@@ -117,7 +133,11 @@ export async function signIn(
  * `.expect(201)` makes the calling test fail immediately with a clear message
  * if creating the post fails, instead of failing later in a confusing way.
  */
-export async function createPost(app: NestExpressApplication, token: string, description = 'A test post') {
+export async function createPost(
+  app: NestExpressApplication,
+  token: string,
+  description = 'A test post',
+) {
   const res = await request(app.getHttpServer())
     .post('/post')
     .set(bearer(token))
@@ -155,7 +175,10 @@ export async function createComment(
       postId,
       // Only add the reply fields when a parent is given; spreading `undefined`
       // (when `parent` is missing) adds nothing to the object.
-      ...(parent && { parentCommentId: parent.id, parentCommentAuthor: parent.authorEmail }),
+      ...(parent && {
+        parentCommentId: parent.id,
+        parentCommentAuthor: parent.authorEmail,
+      }),
     })
     .expect(201);
   return res.body;

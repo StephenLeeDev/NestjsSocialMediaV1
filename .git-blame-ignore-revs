@@ -1,0 +1,9 @@
+# Commits listed here are skipped by `git blame`, so blame shows the commit
+# that actually wrote a line instead of a mass formatting commit.
+#
+# GitHub uses this file automatically in its blame view.
+# Locally, enable it once per clone with:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# style: format all TypeScript files with Prettier
+6f0628001f4301affeef56d6ffe1743380575681

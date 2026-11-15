@@ -7,10 +7,8 @@ import { PostRepository } from '../post/post.repository';
 import { FollowRepository } from '../follow/follow.repository';
 
 @Module({
-  imports: [
-    PassportModule.register({ defaultStrategy: 'jwt' })
-  ],
+  imports: [PassportModule.register({ defaultStrategy: 'jwt' })],
   controllers: [UserController],
-  providers: [UserService, UserRepository, PostRepository, FollowRepository]
+  providers: [UserService, UserRepository, PostRepository, FollowRepository],
 })
 export class UserModule {}

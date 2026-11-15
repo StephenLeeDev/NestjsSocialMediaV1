@@ -9,224 +9,269 @@ import { AuthRepository } from '../auth/auth.repository';
 import { UserRepository } from '../user/user.repository';
 import { PostLikeCountDto } from './dto/post-like-count.dto';
 import { UpdatePostDescriptionDto } from './dto/update-post-description.dto';
+import { publicImageUrl } from '../common/utils/image-url.util';
 
 @Injectable()
 export class PostService {
-    constructor(
-        private postRepository: PostRepository,
-        private userRepository: UserRepository,
-        private authRepository: AuthRepository,
-    ) { }
+  constructor(
+    private postRepository: PostRepository,
+    private userRepository: UserRepository,
+    private authRepository: AuthRepository,
+  ) {}
 
-    private logger = new Logger('PostService');
+  private logger = new Logger('PostService');
 
-    async createPost(createPostDto: CreatePostDto, user: User, imageUrls: string[]): Promise<PostInfoDto> {
-        return this.postRepository.createPost(createPostDto, user, imageUrls);
+  async createPost(
+    createPostDto: CreatePostDto,
+    user: User,
+    imageUrls: string[],
+  ): Promise<PostInfoDto> {
+    return this.postRepository.createPost(createPostDto, user, imageUrls);
+  }
+
+  async getPostList(
+    email: string,
+    page: number,
+    limit: number,
+  ): Promise<PostResponse> {
+    const postListResponse = await this.postRepository.getPostList(
+      email,
+      page,
+      limit,
+    );
+
+    return postListResponse;
+  }
+
+  async getPostListByUser(
+    email: string,
+    page: number,
+    limit: number,
+  ): Promise<PostResponse> {
+    const postListResponse = await this.postRepository.getPostListByUser(
+      email,
+      page,
+      limit,
+    );
+
+    return postListResponse;
+  }
+
+  async likeUnlikePost(
+    postId: number,
+    email: string,
+  ): Promise<PostLikeCountDto> {
+    return await this.postRepository.likeUnlikePost(postId, email);
+  }
+
+  async getPostById(email: string, id: number): Promise<PostInfoDto> {
+    const post = await this.postRepository
+      .createQueryBuilder('post')
+      .leftJoinAndSelect('post.user', 'user')
+      .where('post.id = :id', { id })
+      .select([
+        'post.id',
+        'post.description',
+        'post.status',
+        'post.createdAt',
+        'post.imageUrls',
+        'post.likes',
+        'post.bookMarkedUsers',
+        'user.username',
+        'user.email',
+        'user.thumbnail',
+      ])
+      .getOne();
+
+    if (!post) {
+      this.logger.error(`Can't find Post with id ${id}`);
+      throw new NotFoundException(`Can't find Post with id ${id}`);
+    }
+    await this.postRepository.attachCommentCounts([post]);
+
+    const postInfo: PostInfoDto = new PostInfoDto();
+    postInfo.id = post.id;
+    postInfo.description = post.description;
+    postInfo.status = post.status;
+    postInfo.user = new UserInfoDto();
+    postInfo.user.email = post.user.email;
+    postInfo.user.username = post.user.username;
+    postInfo.user.thumbnail = post.user.thumbnail;
+    postInfo.createdAt = post.createdAt;
+    postInfo.updatedAt = post.updatedAt;
+    postInfo.imageUrls = post.imageUrls;
+    postInfo.likeCount = post.likes.length;
+    postInfo.isLiked = post.likes.includes(email);
+    postInfo.isBookmarked = post.bookMarkedUsers.includes(email);
+    postInfo.commentCount = post.commentCount;
+
+    this.logger.verbose(`post : ${postInfo}`);
+    return postInfo;
+  }
+
+  async updatePostDescription(
+    email: string,
+    updatePostDescriptionDto: UpdatePostDescriptionDto,
+  ): Promise<PostInfoDto> {
+    const postInfoDto = await this.postRepository.updatePostDescription(
+      email,
+      updatePostDescriptionDto,
+    );
+
+    return postInfoDto;
+  }
+
+  async deletePost(id: number, user: User): Promise<void> {
+    const result = await this.postRepository.delete({ id, user });
+
+    if (result.affected === 0) {
+      this.logger.error(`Can't find Post with id ${id}`);
+      throw new NotFoundException(`Can't find Post with id ${id}`);
     }
 
-    async getPostList(
-        email: string,
-        page: number,
-        limit: number,
-    ): Promise<PostResponse> {
+    this.logger.verbose(`result ${result}`);
+  }
 
-        const postListResponse = await this.postRepository.getPostList(email, page, limit);
+  async updatePostStatus(email: string, id: number): Promise<void> {
+    const post = await this.getPostById(email, id);
 
-        return postListResponse;
+    if (!post) {
+      this.logger.error(`Can't find Post with id ${id}`);
+      throw new NotFoundException(`Can't find Post with id ${id}`);
     }
 
-    async getPostListByUser(
-        email: string,
-        page: number,
-        limit: number,
-    ): Promise<PostResponse> {
-        const postListResponse = await this.postRepository.getPostListByUser(email, page, limit);
+    post.status =
+      post.status == PostStatus.PUBLIC ? PostStatus.PRIVATE : PostStatus.PUBLIC;
+    await this.postRepository.save(post);
+  }
 
-        return postListResponse;
+  async createDummyPosts(email?: string): Promise<void> {
+    const count = 10;
+
+    // Only look the user up when an email was actually given.
+    // TypeORM 1.x throws on `undefined` inside a where condition
+    // (`findOneBy({ email: undefined })`), while older versions silently dropped
+    // the condition and returned the FIRST user in the table. Checking first makes
+    // the intent explicit: no email → no specific user → random dummy users below.
+    const user = email ? await this.userRepository.findOneBy({ email }) : null;
+
+    let shuffledUsers: User[] = [];
+
+    /// Create dummy posts just specific user
+    if (user) {
+      for (let i = 0; i < 10; i++) {
+        shuffledUsers.push(user);
+      }
+    }
+    /// Create dummy posts for random users
+    else {
+      let users = await this.userRepository.find({ take: count });
+
+      if (users.length < count) {
+        await this.authRepository.createDummyUsers();
+        users = await this.userRepository.find({ take: count });
+      }
+
+      const duplicatedUsers = [
+        ...users,
+        ...users.slice(0, count - users.length),
+      ];
+      shuffledUsers = shuffleArray(duplicatedUsers);
     }
 
-    async likeUnlikePost(
-        postId: number,
-        email: string,
-    ): Promise<PostLikeCountDto> {
-        return await this.postRepository.likeUnlikePost(postId, email);
+    const totalImageCount = count * 2;
+
+    function shuffleArray(array: any[]): any[] {
+      const newArray = [...array];
+
+      for (let i = newArray.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+      }
+
+      return newArray;
     }
 
-    async getPostById(email: string, id: number): Promise<PostInfoDto> {
-        const post = await this.postRepository
-            .createQueryBuilder('post')
-            .leftJoinAndSelect('post.user', 'user')
-            .where('post.id = :id', { id })
-            .select([
-                'post.id',
-                'post.description',
-                'post.status',
-                'post.createdAt',
-                'post.imageUrls',
-                'post.likes',
-                'post.bookMarkedUsers',
-                'user.username',
-                'user.email',
-                'user.thumbnail',
-            ])
-            .getOne();
-      
-        if (!post) {
-            this.logger.error(`Can't find Post with id ${id}`);
-            throw new NotFoundException(`Can't find Post with id ${id}`);
+    function generateRandomArray(): string[][] {
+      const numbers = Array.from(
+        { length: totalImageCount },
+        (_, index) => index + 1,
+      );
+      const shuffledNumbers = shuffleArray(numbers);
+
+      const result: string[][] = [];
+
+      for (let i = 0; i < 10; i++) {
+        const subset: string[] = [];
+        subset.push(publicImageUrl(`dummy/${shuffledNumbers[i]}.jpeg`));
+        result.push(subset);
+      }
+
+      for (let i = 10; i < shuffledNumbers.length; i++) {
+        const randomIndex = Math.floor(Math.random() * 10);
+        if (result[randomIndex].length < 3) {
+          result[randomIndex].push(
+            publicImageUrl(`dummy/${shuffledNumbers[i]}.jpeg`),
+          );
         }
-        await this.postRepository.attachCommentCounts([post]);
-      
-        const postInfo: PostInfoDto = new PostInfoDto();
-        postInfo.id = post.id;
-        postInfo.description = post.description;
-        postInfo.status = post.status;
-        postInfo.user = new UserInfoDto();
-        postInfo.user.email = post.user.email;
-        postInfo.user.username = post.user.username;
-        postInfo.user.thumbnail = post.user.thumbnail;
-        postInfo.createdAt = post.createdAt;
-        postInfo.updatedAt = post.updatedAt;
-        postInfo.imageUrls = post.imageUrls;
-        postInfo.likeCount = post.likes.length;
-        postInfo.isLiked = post.likes.includes(email);
-        postInfo.isBookmarked = post.bookMarkedUsers.includes(email);
-        postInfo.commentCount = post.commentCount;
-      
-        this.logger.verbose(`post : ${postInfo}`);
-        return postInfo;
+      }
+
+      return result;
     }
 
-    async updatePostDescription(
-        email: string,
-        updatePostDescriptionDto: UpdatePostDescriptionDto,
-    ): Promise<PostInfoDto> {
+    const shuffledImageNumbers = generateRandomArray();
 
-        const postInfoDto = await this.postRepository.updatePostDescription(email, updatePostDescriptionDto);
+    const words = [
+      'Lorem',
+      'ipsum',
+      'dolor',
+      'sit',
+      'amet',
+      'consectetur',
+      'adipiscing',
+      'elit',
+      'sed',
+      'do',
+      'eiusmod',
+      'tempor',
+      'incididunt',
+      'ut',
+      'labore',
+      'et',
+      'dolore',
+      'magna',
+      'aliqua',
+    ];
+    function generateRandomSentence(): string {
+      const sentenceLength = Math.floor(Math.random() * 20) + 3;
 
-        return postInfoDto;
+      let sentence = '';
+
+      for (let i = 0; i < sentenceLength; i++) {
+        const randomIndex = Math.floor(Math.random() * words.length);
+        const word = words[randomIndex];
+        sentence += word + ' ';
+      }
+
+      sentence = sentence.trim();
+      sentence += '.';
+
+      return sentence;
     }
 
-    async deletePost(
-        id: number,
-        user: User,
-    ): Promise<void> {
-        const result = await this.postRepository.delete({ id, user });
+    shuffledUsers.map((user: User, index: number) => {
+      const post = new CreatePostDto();
+      post.description = generateRandomSentence();
 
-        if (result.affected === 0) {
-            this.logger.error(`Can't find Post with id ${id}`);
-            throw new NotFoundException(`Can't find Post with id ${id}`);
-        }
-
-        this.logger.verbose(`result ${result}`);
-    }
-
-    async updatePostStatus(email: string, id: number): Promise<void> {
-        const post = await this.getPostById(email, id);
-
-        if (!post) {
-            this.logger.error(`Can't find Post with id ${id}`);
-            throw new NotFoundException(`Can't find Post with id ${id}`);
-        }
-    
-        post.status = post.status == PostStatus.PUBLIC ? PostStatus.PRIVATE : PostStatus.PUBLIC;
-        await this.postRepository.save(post);
-    }
-
-    async createDummyPosts(email?: string): Promise<void> {
-
-        const count = 10;
-        const user = await this.userRepository.findOneBy({ email });
-
-        let users = [];
-        let duplicatedUsers = [];
-        let shuffledUsers = [];
-
-        /// Create dummy posts just specific user
-        if (user) {
-            for (let i = 0; i < 10; i++) {
-                shuffledUsers.push(user);
-            }
-        }
-        /// Create dummy posts for random users
-        else {
-            users = await this.userRepository.find({ take: count });
-    
-            if (users.length < count) {
-                await this.authRepository.createDummyUsers();
-                users = await this.userRepository.find({ take: count });
-            }
-    
-            duplicatedUsers = [...users, ...users.slice(0, count - users.length)];
-            shuffledUsers = shuffleArray(duplicatedUsers);
-        }
-        
-        const totalImageCount = count * 2;
-
-        function shuffleArray(array: any[]): any[] {
-            const newArray = [...array];
-          
-            for (let i = newArray.length - 1; i > 0; i--) {
-              const j = Math.floor(Math.random() * (i + 1));
-              [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
-            }
-          
-            return newArray;
-        }
-          
-        function generateRandomArray(): string[][] {
-            const numbers = Array.from({ length: totalImageCount }, (_, index) => index + 1);
-            const shuffledNumbers = shuffleArray(numbers);
-        
-            const serverUrl = process.env.SERVER_URL;
-            const result: string[][] = [];
-
-            for (let i = 0; i < 10; i++) {
-                const subset: string[] = [];
-                subset.push(`${serverUrl}/images/dummy/${shuffledNumbers[i]}.jpeg`);
-                result.push(subset);
-            }
-
-            for (let i = 10; i < shuffledNumbers.length; i++) {
-                const randomIndex = Math.floor(Math.random() * 10);
-                if (result[randomIndex].length < 3) {
-                  result[randomIndex].push(`${serverUrl}/images/dummy/${shuffledNumbers[i]}.jpeg`);
-                }
-            }
-
-            return result;
-        }
-
-        const shuffledImageNumbers = generateRandomArray();
-
-        const words = ['Lorem', 'ipsum', 'dolor', 'sit', 'amet', 'consectetur', 'adipiscing', 'elit', 'sed', 'do', 'eiusmod', 'tempor', 'incididunt', 'ut', 'labore', 'et', 'dolore', 'magna', 'aliqua'];
-        function generateRandomSentence(): string {
-            const sentenceLength = Math.floor(Math.random() * 20) + 3;
-          
-            let sentence = '';
-          
-            for (let i = 0; i < sentenceLength; i++) {
-                const randomIndex = Math.floor(Math.random() * words.length);
-                const word = words[randomIndex];
-                sentence += word + ' ';
-            }
-          
-            sentence = sentence.trim();
-            sentence += '.';
-          
-            return sentence;
-        }
-
-        shuffledUsers.map((user: User, index: number) => {
-            const post = new CreatePostDto();
-            post.description = generateRandomSentence();
-        
-            // Add a slight delay to slow down the dummy data creation speed
-            // to prevent all dummy comments from having the same createdAt value
-            setTimeout(async () => {
-                await this.postRepository.createPost(post, user, shuffledImageNumbers[index]);
-            }, index * 1);
-        })
-    }
-
+      // Add a slight delay to slow down the dummy data creation speed
+      // to prevent all dummy comments from having the same createdAt value
+      setTimeout(async () => {
+        await this.postRepository.createPost(
+          post,
+          user,
+          shuffledImageNumbers[index],
+        );
+      }, index * 1);
+    });
+  }
 }

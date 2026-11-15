@@ -20,7 +20,14 @@
  */
 import { NestExpressApplication } from '@nestjs/platform-express';
 import request from 'supertest';
-import { bearer, createComment, createPost, createTestApp, resetDatabase, signIn } from './utils/test-app';
+import {
+  bearer,
+  createComment,
+  createPost,
+  createTestApp,
+  resetDatabase,
+  signIn,
+} from './utils/test-app';
 
 describe('Comment (e2e)', () => {
   let app: NestExpressApplication;
@@ -62,14 +69,25 @@ describe('Comment (e2e)', () => {
     it('creates a reply when parentCommentId is given', async () => {
       const parent = await createComment(app, token, postId);
 
-      const reply = await createComment(app, otherToken, postId, 'Thanks', { id: parent.id, authorEmail: 'commenter@gmail.com' });
+      const reply = await createComment(app, otherToken, postId, 'Thanks', {
+        id: parent.id,
+        authorEmail: 'commenter@gmail.com',
+      });
 
       // The server decides the type from whether a parent was given.
-      expect(reply).toMatchObject({ type: 'REPLY', parentCommentId: parent.id, parentCommentAuthor: 'commenter@gmail.com' });
+      expect(reply).toMatchObject({
+        type: 'REPLY',
+        parentCommentId: parent.id,
+        parentCommentAuthor: 'commenter@gmail.com',
+      });
     });
 
     it('returns 404 for an unknown post', async () => {
-      await request(server).post('/comment').set(bearer(token)).send({ content: 'x', postId: 999999 }).expect(404);
+      await request(server)
+        .post('/comment')
+        .set(bearer(token))
+        .send({ content: 'x', postId: 999999 })
+        .expect(404);
     });
   });
 
@@ -88,8 +106,14 @@ describe('Comment (e2e)', () => {
       listPostId = (await createPost(app, token)).id;
       parentId = (await createComment(app, token, listPostId, 'parent')).id;
       await createComment(app, token, listPostId, 'lonely');
-      await createComment(app, otherToken, listPostId, 'reply 1', { id: parentId, authorEmail: 'commenter@gmail.com' });
-      await createComment(app, otherToken, listPostId, 'reply 2', { id: parentId, authorEmail: 'commenter@gmail.com' });
+      await createComment(app, otherToken, listPostId, 'reply 1', {
+        id: parentId,
+        authorEmail: 'commenter@gmail.com',
+      });
+      await createComment(app, otherToken, listPostId, 'reply 2', {
+        id: parentId,
+        authorEmail: 'commenter@gmail.com',
+      });
     });
 
     it('GET /comment lists only top-level comments with their reply counts', async () => {
@@ -103,23 +127,38 @@ describe('Comment (e2e)', () => {
       expect(res.body.total).toBe(2);
       // Turn the list into { content: childrenCount } so the check does not
       // depend on the order in which the comments come back.
-      const counts = Object.fromEntries(res.body.comments.map((comment) => [comment.content, comment.childrenCount]));
+      const counts = Object.fromEntries(
+        res.body.comments.map((comment) => [
+          comment.content,
+          comment.childrenCount,
+        ]),
+      );
       expect(counts).toEqual({ parent: 2, lonely: 0 });
     });
 
     it('GET /comment/reply lists the replies of a comment', async () => {
       const res = await request(server)
         .get('/comment/reply')
-        .query({ parentCommentId: parentId, postId: listPostId, page: 1, limit: 10 })
+        .query({
+          parentCommentId: parentId,
+          postId: listPostId,
+          page: 1,
+          limit: 10,
+        })
         .set(bearer(token))
         .expect(200);
 
       expect(res.body.total).toBe(2);
-      expect(res.body.comments.every((comment) => comment.type === 'REPLY')).toBe(true);
+      expect(
+        res.body.comments.every((comment) => comment.type === 'REPLY'),
+      ).toBe(true);
     });
 
     it("counts comments and replies in the post's commentCount", async () => {
-      const res = await request(server).get(`/post/${listPostId}`).set(bearer(token)).expect(200);
+      const res = await request(server)
+        .get(`/post/${listPostId}`)
+        .set(bearer(token))
+        .expect(200);
 
       // 2 comments + 2 replies.
       expect(res.body.commentCount).toBe(4);
@@ -130,7 +169,11 @@ describe('Comment (e2e)', () => {
     it("updates the author's own comment", async () => {
       const comment = await createComment(app, token, postId, 'typo');
 
-      const res = await request(server).patch('/comment').set(bearer(token)).send({ id: comment.id, content: 'fixed' }).expect(200);
+      const res = await request(server)
+        .patch('/comment')
+        .set(bearer(token))
+        .send({ id: comment.id, content: 'fixed' })
+        .expect(200);
 
       expect(res.body).toMatchObject({ id: comment.id, content: 'fixed' });
     });
@@ -139,7 +182,11 @@ describe('Comment (e2e)', () => {
       const comment = await createComment(app, token, postId);
 
       // Same as posts: the server answers 401 (403 would be more precise).
-      await request(server).patch('/comment').set(bearer(otherToken)).send({ id: comment.id, content: 'hacked' }).expect(401);
+      await request(server)
+        .patch('/comment')
+        .set(bearer(otherToken))
+        .send({ id: comment.id, content: 'hacked' })
+        .expect(401);
     });
   });
 
@@ -147,7 +194,10 @@ describe('Comment (e2e)', () => {
     it("deletes the author's own comment", async () => {
       const comment = await createComment(app, token, postId);
 
-      await request(server).delete(`/comment/${comment.id}`).set(bearer(token)).expect(200);
+      await request(server)
+        .delete(`/comment/${comment.id}`)
+        .set(bearer(token))
+        .expect(200);
     });
 
     it("does not delete someone else's comment", async () => {
@@ -155,7 +205,10 @@ describe('Comment (e2e)', () => {
 
       // The delete only matches the caller's own comments, so for anyone else
       // the comment "does not exist" (404).
-      await request(server).delete(`/comment/${comment.id}`).set(bearer(otherToken)).expect(404);
+      await request(server)
+        .delete(`/comment/${comment.id}`)
+        .set(bearer(otherToken))
+        .expect(404);
     });
 
     it('deletes a comment that has replies, together with its replies', async () => {
@@ -165,12 +218,21 @@ describe('Comment (e2e)', () => {
       // A fresh post is used so its commentCount starts at exactly 0.
       const deletePostId = (await createPost(app, token)).id;
       const parent = await createComment(app, token, deletePostId);
-      await createComment(app, otherToken, deletePostId, 'reply', { id: parent.id, authorEmail: 'commenter@gmail.com' });
+      await createComment(app, otherToken, deletePostId, 'reply', {
+        id: parent.id,
+        authorEmail: 'commenter@gmail.com',
+      });
 
-      await request(server).delete(`/comment/${parent.id}`).set(bearer(token)).expect(200);
+      await request(server)
+        .delete(`/comment/${parent.id}`)
+        .set(bearer(token))
+        .expect(200);
 
       // Both the comment AND its reply are gone.
-      const res = await request(server).get(`/post/${deletePostId}`).set(bearer(token)).expect(200);
+      const res = await request(server)
+        .get(`/post/${deletePostId}`)
+        .set(bearer(token))
+        .expect(200);
       expect(res.body.commentCount).toBe(0);
     });
   });

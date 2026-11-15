@@ -37,17 +37,27 @@ describe('Auth (e2e)', () => {
   describe('POST /auth/signin', () => {
     // The tests in this block run in order and share this one account:
     // the first test creates it, the following ones sign into it again.
-    const credentials = { username: 'John', socialType: 'GOOGLE', email: 'john@gmail.com' };
+    const credentials = {
+      username: 'John',
+      socialType: 'GOOGLE',
+      email: 'john@gmail.com',
+    };
 
     it('creates the account on first sign-in and returns an access token', async () => {
-      const res = await request(server).post('/auth/signin').send(credentials).expect(201);
+      const res = await request(server)
+        .post('/auth/signin')
+        .send(credentials)
+        .expect(201);
 
       // The response contains only the token (the Flutter app stores it).
       expect(res.body).toEqual({ accessToken: expect.any(String) });
     });
 
     it('signs an existing account in again', async () => {
-      const res = await request(server).post('/auth/signin').send(credentials).expect(201);
+      const res = await request(server)
+        .post('/auth/signin')
+        .send(credentials)
+        .expect(201);
 
       expect(res.body.accessToken).toEqual(expect.any(String));
     });
@@ -64,7 +74,10 @@ describe('Auth (e2e)', () => {
     it('rejects a request with missing fields', async () => {
       // `email` and `socialType` are missing. The ValidationPipe on this endpoint
       // checks the DTO (`AuthCredentialsDto`) and answers 400 Bad Request.
-      await request(server).post('/auth/signin').send({ username: 'John' }).expect(400);
+      await request(server)
+        .post('/auth/signin')
+        .send({ username: 'John' })
+        .expect(400);
     });
   });
 
@@ -77,16 +90,26 @@ describe('Auth (e2e)', () => {
     });
 
     it('rejects an invalid token', async () => {
-      await request(server).get('/user').set(bearer('not-a-real-token')).expect(401);
+      await request(server)
+        .get('/user')
+        .set(bearer('not-a-real-token'))
+        .expect(401);
     });
 
     it('accepts the token returned by sign-in', async () => {
       const { body } = await request(server)
         .post('/auth/signin')
-        .send({ username: 'Kate', socialType: 'GOOGLE', email: 'kate@gmail.com' })
+        .send({
+          username: 'Kate',
+          socialType: 'GOOGLE',
+          email: 'kate@gmail.com',
+        })
         .expect(201);
 
-      const res = await request(server).get('/user').set(bearer(body.accessToken)).expect(200);
+      const res = await request(server)
+        .get('/user')
+        .set(bearer(body.accessToken))
+        .expect(200);
 
       // The guard resolved the token back to the right user.
       expect(res.body.email).toBe('kate@gmail.com');

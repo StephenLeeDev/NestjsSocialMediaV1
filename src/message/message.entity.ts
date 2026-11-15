@@ -5,7 +5,6 @@ import { MessageType } from './message-type';
 
 @Entity('messages')
 export class MessageEntity {
-    
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -36,5 +35,4 @@ export class MessageEntity {
   //     does not change. Values are 'TEXT' / 'IMAGE' (see message-type.ts).
   @Column({ type: 'varchar' })
   type: MessageType;
-
 }

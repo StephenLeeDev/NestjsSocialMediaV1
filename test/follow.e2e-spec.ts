@@ -32,7 +32,11 @@ describe('Follow (e2e)', () => {
    * `user.e2e-spec.ts` about this endpoint.)
    */
   const profileOf = (token: string, email: string) =>
-    request(server).get(`/user/${email}`).query({ userEmail: email }).set(bearer(token)).expect(200);
+    request(server)
+      .get(`/user/${email}`)
+      .query({ userEmail: email })
+      .set(bearer(token))
+      .expect(200);
 
   beforeAll(async () => {
     app = await createTestApp();
@@ -47,7 +51,11 @@ describe('Follow (e2e)', () => {
   });
 
   it('POST /follow follows a user and returns their follower count', async () => {
-    const res = await request(server).post('/follow').set(bearer(fanToken)).send({ email: 'star@gmail.com' }).expect(201);
+    const res = await request(server)
+      .post('/follow')
+      .set(bearer(fanToken))
+      .send({ email: 'star@gmail.com' })
+      .expect(201);
 
     // `value` is the followed user's NEW follower count.
     expect(res.body).toEqual({ value: 1 });
@@ -56,10 +64,17 @@ describe('Follow (e2e)', () => {
   it('reflects the follow in both profiles', async () => {
     // "star" now has one follower, and from fan's view isFollowing is true.
     const star = await profileOf(fanToken, 'star@gmail.com');
-    expect(star.body).toMatchObject({ followerCount: 1, followingCount: 0, isFollowing: true });
+    expect(star.body).toMatchObject({
+      followerCount: 1,
+      followingCount: 0,
+      isFollowing: true,
+    });
 
     // "fan" now follows one user.
-    const fan = await request(server).get('/user').set(bearer(fanToken)).expect(200);
+    const fan = await request(server)
+      .get('/user')
+      .set(bearer(fanToken))
+      .expect(200);
     expect(fan.body).toMatchObject({ followerCount: 0, followingCount: 1 });
   });
 
@@ -71,7 +86,10 @@ describe('Follow (e2e)', () => {
       .set(bearer(starToken))
       .expect(200);
     expect(followers.body.total).toBe(1);
-    expect(followers.body.userList[0]).toMatchObject({ email: 'fan@gmail.com', username: 'Fan' });
+    expect(followers.body.userList[0]).toMatchObject({
+      email: 'fan@gmail.com',
+      username: 'Fan',
+    });
 
     // fan's followings → [star]
     const followings = await request(server)
@@ -80,7 +98,9 @@ describe('Follow (e2e)', () => {
       .set(bearer(fanToken))
       .expect(200);
     expect(followings.body.total).toBe(1);
-    expect(followings.body.userList[0]).toMatchObject({ email: 'star@gmail.com' });
+    expect(followings.body.userList[0]).toMatchObject({
+      email: 'star@gmail.com',
+    });
   });
 
   it('DELETE /follow/following/cancel unfollows and returns the new follower count', async () => {

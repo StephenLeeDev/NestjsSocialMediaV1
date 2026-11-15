@@ -17,7 +17,23 @@
  */
 import { NestExpressApplication } from '@nestjs/platform-express';
 import request from 'supertest';
-import { bearer, createPost, createTestApp, resetDatabase, signIn, TEST_IMAGE } from './utils/test-app';
+import {
+  bearer,
+  createPost,
+  createTestApp,
+  resetDatabase,
+  signIn,
+  TEST_IMAGE,
+} from './utils/test-app';
+
+/**
+ * Full URL of the bundled default profile picture, built from the SAME
+ * SERVER_URL the app uses (set in test/setup-env.ts). Asserting the exact URL
+ * proves the server builds it from configuration instead of a hard-coded IP.
+ * (The file name really is spelled "dafault"; it is kept for compatibility
+ * with URLs already stored in the database.)
+ */
+const DEFAULT_THUMBNAIL_URL = `${process.env.SERVER_URL}/images/default/dafault_thumbnail.png`;
 
 describe('User (e2e)', () => {
   let app: NestExpressApplication;
@@ -38,7 +54,10 @@ describe('User (e2e)', () => {
     it("returns the current user's profile with zeroed counters", async () => {
       const token = await signIn(app, 'newbie@gmail.com', 'Newbie');
 
-      const res = await request(server).get('/user').set(bearer(token)).expect(200);
+      const res = await request(server)
+        .get('/user')
+        .set(bearer(token))
+        .expect(200);
 
       // `toEqual` checks the WHOLE response, so this test also documents the
       // exact shape the Flutter app receives for a brand-new account.
@@ -46,7 +65,7 @@ describe('User (e2e)', () => {
         email: 'newbie@gmail.com',
         username: 'Newbie',
         // New accounts get the bundled default picture.
-        thumbnail: expect.stringContaining('/images/default/'),
+        thumbnail: DEFAULT_THUMBNAIL_URL,
         bookMarks: [],
         statusMessage: '',
         totalPostCount: 0,
@@ -60,7 +79,10 @@ describe('User (e2e)', () => {
       await createPost(app, token);
       await createPost(app, token);
 
-      const res = await request(server).get('/user').set(bearer(token)).expect(200);
+      const res = await request(server)
+        .get('/user')
+        .set(bearer(token))
+        .expect(200);
 
       expect(res.body.totalPostCount).toBe(2);
     });
@@ -83,7 +105,11 @@ describe('User (e2e)', () => {
         .expect(200);
 
       // `toMatchObject` only checks the listed fields and ignores the rest.
-      expect(res.body).toMatchObject({ email: 'target@gmail.com', username: 'Target', isFollowing: false });
+      expect(res.body).toMatchObject({
+        email: 'target@gmail.com',
+        username: 'Target',
+        isFollowing: false,
+      });
     });
 
     it('returns 404 for an unknown user', async () => {
@@ -101,10 +127,17 @@ describe('User (e2e)', () => {
     it('updates the status message', async () => {
       const token = await signIn(app, 'status@gmail.com');
 
-      await request(server).patch('/user/statusMessage').set(bearer(token)).send({ statusMessage: 'Hello!' }).expect(200);
+      await request(server)
+        .patch('/user/statusMessage')
+        .set(bearer(token))
+        .send({ statusMessage: 'Hello!' })
+        .expect(200);
 
       // Read the profile back to prove the change was actually saved.
-      const res = await request(server).get('/user').set(bearer(token)).expect(200);
+      const res = await request(server)
+        .get('/user')
+        .set(bearer(token))
+        .expect(200);
       expect(res.body.statusMessage).toBe('Hello!');
     });
   });
@@ -115,12 +148,23 @@ describe('User (e2e)', () => {
       const post = await createPost(app, token);
 
       // 1st call: the post is not bookmarked yet, so it gets bookmarked.
-      await request(server).post('/user/post/bookmark').set(bearer(token)).send({ postId: post.id }).expect(201);
-      let res = await request(server).get('/user').set(bearer(token)).expect(200);
+      await request(server)
+        .post('/user/post/bookmark')
+        .set(bearer(token))
+        .send({ postId: post.id })
+        .expect(201);
+      let res = await request(server)
+        .get('/user')
+        .set(bearer(token))
+        .expect(200);
       expect(res.body.bookMarks).toEqual([post.id]);
 
       // 2nd call with the same post: the bookmark is removed again.
-      await request(server).post('/user/post/bookmark').set(bearer(token)).send({ postId: post.id }).expect(201);
+      await request(server)
+        .post('/user/post/bookmark')
+        .set(bearer(token))
+        .send({ postId: post.id })
+        .expect(201);
       res = await request(server).get('/user').set(bearer(token)).expect(200);
       expect(res.body.bookMarks).toEqual([]);
     });
@@ -131,12 +175,19 @@ describe('User (e2e)', () => {
       const token = await signIn(app, 'selfie@gmail.com');
 
       // The field name must be "file" (single-file upload).
-      const uploaded = await request(server).patch('/user/thumbnail').set(bearer(token)).attach('file', TEST_IMAGE).expect(200);
+      const uploaded = await request(server)
+        .patch('/user/thumbnail')
+        .set(bearer(token))
+        .attach('file', TEST_IMAGE)
+        .expect(200);
       // The server renames uploads to "<timestamp>.<extension>".
       expect(uploaded.body.updatedThumbnail).toMatch(/\/images\/\d+\.jpeg$/);
 
-      const reset = await request(server).delete('/user/thumbnail').set(bearer(token)).expect(200);
-      expect(reset.body.updatedThumbnail).toContain('/images/default/');
+      const reset = await request(server)
+        .delete('/user/thumbnail')
+        .set(bearer(token))
+        .expect(200);
+      expect(reset.body.updatedThumbnail).toBe(DEFAULT_THUMBNAIL_URL);
     });
   });
 
@@ -156,7 +207,10 @@ describe('User (e2e)', () => {
 
       expect(res.body.total).toBe(2);
       // Sorted so the assertion does not depend on the order the server returns.
-      expect(res.body.userList.map((user) => user.email).sort()).toEqual(['alice@gmail.com', 'alicia@gmail.com']);
+      expect(res.body.userList.map((user) => user.email).sort()).toEqual([
+        'alice@gmail.com',
+        'alicia@gmail.com',
+      ]);
     });
   });
 });

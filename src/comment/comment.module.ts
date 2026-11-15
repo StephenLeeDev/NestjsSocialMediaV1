@@ -8,10 +8,14 @@ import { UserRepository } from '../user/user.repository';
 import { AuthRepository } from '../auth/auth.repository';
 
 @Module({
-  imports: [
-    AuthModule,
-  ],
+  imports: [AuthModule],
   controllers: [CommentController],
-  providers: [CommentService, PostRepository, CommentRepository, UserRepository, AuthRepository]
+  providers: [
+    CommentService,
+    PostRepository,
+    CommentRepository,
+    UserRepository,
+    AuthRepository,
+  ],
 })
 export class CommentModule {}

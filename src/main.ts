@@ -19,10 +19,11 @@ import { ConfigService } from '@nestjs/config';
 import { configureApp } from './app.setup';
 
 async function bootstrap() {
-
   // `NestExpressApplication` gives access to Express-specific features such as
   // `useStaticAssets`, which `configureApp` needs.
-  const app = configureApp(await NestFactory.create<NestExpressApplication>(AppModule));
+  const app = configureApp(
+    await NestFactory.create<NestExpressApplication>(AppModule),
+  );
 
   // ConfigService reads values from environment variables / the .env file.
   const configService = app.get(ConfigService);
@@ -30,6 +31,5 @@ async function bootstrap() {
   const port = configService.get('PORT');
   await app.listen(port);
   Logger.log(`Application running on ${configService.get('SERVER_URL')}`);
-
 }
 bootstrap();
