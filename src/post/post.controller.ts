@@ -35,11 +35,11 @@ import {
   uploadDestination,
 } from '../lib/multerOptions';
 import { diskStorage } from 'multer';
-import { ConfigService } from '@nestjs/config';
 import { PostInfoDto, PostResponse } from './dto/post-info.dto';
 import { PostLikeCountDto } from './dto/post-like-count.dto';
 import { UpdatePostDescriptionDto } from './dto/update-post-description.dto';
 import { PostIdDto } from './dto/post-id.dto';
+import { publicImageUrl } from '../common/utils/image-url.util';
 
 @ApiTags('POST')
 @UseGuards(AuthGuard())
@@ -48,10 +48,7 @@ import { PostIdDto } from './dto/post-id.dto';
 export class PostController {
   private logger = new Logger('PostController');
 
-  constructor(
-    private postService: PostService,
-    private readonly configService: ConfigService,
-  ) {}
+  constructor(private postService: PostService) {}
 
   @ApiResponse({
     type: PostInfoDto,
@@ -92,10 +89,8 @@ export class PostController {
     return this.postService.createPost(
       createPostDto,
       user,
-      files.map(
-        (file) =>
-          `${this.configService.get('SERVER_URL')}/images/${file.filename}`,
-      ),
+      // Multer already saved the files; turn their new names into public URLs.
+      files.map((file) => publicImageUrl(file.filename)),
     );
   }
 

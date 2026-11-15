@@ -34,11 +34,11 @@ import {
   uploadDestination,
 } from '../lib/multerOptions';
 import { UpdatedUserThumbnailDto } from './dto/updated-user-thumbnail.dto';
-import { ConfigService } from '@nestjs/config';
 import { UserInfoIncludingIsFollowingDto } from './dto/user-info-including-isfollowing.dto';
 import { UserListDto } from './dto/user-list.dto';
 import { PostIdDto } from '../post/dto/post-id.dto';
 import { StatusMessageDto } from './dto/status-message.dto';
+import { publicImageUrl } from '../common/utils/image-url.util';
 
 @ApiTags('USER')
 @UseGuards(AuthGuard())
@@ -47,10 +47,7 @@ import { StatusMessageDto } from './dto/status-message.dto';
 export class UserController {
   private logger = new Logger('UserController');
 
-  constructor(
-    private userService: UserService,
-    private readonly configService: ConfigService,
-  ) {}
+  constructor(private userService: UserService) {}
 
   /// Get my user information
   @ApiResponse({
@@ -142,7 +139,8 @@ export class UserController {
   ): Promise<UpdatedUserThumbnailDto> {
     return this.userService.updateUserThumbnail(
       user.email,
-      `${this.configService.get('SERVER_URL')}/images/${file.filename}`,
+      // Multer already saved the file; turn its new name into a public URL.
+      publicImageUrl(file.filename),
     );
   }
 

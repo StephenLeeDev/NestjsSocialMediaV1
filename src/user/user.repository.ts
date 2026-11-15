@@ -8,6 +8,7 @@ import { UpdatedUserThumbnailDto } from './dto/updated-user-thumbnail.dto';
 import { PostStatus } from '../post/post-status.enum';
 import { UserListDto } from './dto/user-list.dto';
 import { UserSimpleInfoIncludingStatusMessageDto } from './dto/user-simple-info-including-status-message.dto';
+import { defaultThumbnailUrl } from '../common/utils/image-url.util';
 
 @Injectable()
 export class UserRepository extends Repository<User> {
@@ -104,9 +105,8 @@ export class UserRepository extends Repository<User> {
   }
 
   async deleteThumbnail(user: User): Promise<UpdatedUserThumbnailDto> {
-    const defaultThumbnail =
-      'http://192.168.1.251:3001/images/default/dafault_thumbnail.png';
-    user.thumbnail = defaultThumbnail;
+    // "Deleting" a profile picture means going back to the bundled default one.
+    user.thumbnail = defaultThumbnailUrl();
     await this.save(user);
 
     const updatedUserThumbnailDto = new UpdatedUserThumbnailDto();

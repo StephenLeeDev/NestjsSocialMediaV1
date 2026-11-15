@@ -9,6 +9,7 @@ import { AuthRepository } from '../auth/auth.repository';
 import { UserRepository } from '../user/user.repository';
 import { PostLikeCountDto } from './dto/post-like-count.dto';
 import { UpdatePostDescriptionDto } from './dto/update-post-description.dto';
+import { publicImageUrl } from '../common/utils/image-url.util';
 
 @Injectable()
 export class PostService {
@@ -198,12 +199,11 @@ export class PostService {
       );
       const shuffledNumbers = shuffleArray(numbers);
 
-      const serverUrl = process.env.SERVER_URL;
       const result: string[][] = [];
 
       for (let i = 0; i < 10; i++) {
         const subset: string[] = [];
-        subset.push(`${serverUrl}/images/dummy/${shuffledNumbers[i]}.jpeg`);
+        subset.push(publicImageUrl(`dummy/${shuffledNumbers[i]}.jpeg`));
         result.push(subset);
       }
 
@@ -211,7 +211,7 @@ export class PostService {
         const randomIndex = Math.floor(Math.random() * 10);
         if (result[randomIndex].length < 3) {
           result[randomIndex].push(
-            `${serverUrl}/images/dummy/${shuffledNumbers[i]}.jpeg`,
+            publicImageUrl(`dummy/${shuffledNumbers[i]}.jpeg`),
           );
         }
       }

@@ -10,6 +10,10 @@ import { User } from '../user/user.entity';
 import { currentSeoulTimestamp } from '../common/utils/date.util';
 import { randomUUID } from 'crypto';
 import { AuthSocialType } from './auth-social-type-validation.enum';
+import {
+  defaultThumbnailUrl,
+  publicImageUrl,
+} from '../common/utils/image-url.util';
 
 @Injectable()
 export class AuthRepository extends Repository<User> {
@@ -30,6 +34,8 @@ export class AuthRepository extends Repository<User> {
       socialType,
       email,
       createdAt,
+      // Every new account starts with the bundled default profile picture.
+      thumbnail: defaultThumbnailUrl(),
       bookMarks: [],
     });
 
@@ -48,7 +54,6 @@ export class AuthRepository extends Repository<User> {
   }
 
   async createDummyUsers(): Promise<void> {
-    const serverUrl = process.env.SERVER_URL;
     const thumbnailsCount = 20;
 
     const usernames = [
@@ -68,7 +73,7 @@ export class AuthRepository extends Repository<User> {
       const username = usernames[i];
       const email = `${username.charAt(0).toLowerCase()}${username.slice(1)}@gmail.com`;
       const thumbnailNumber = Math.floor(Math.random() * thumbnailsCount) + 1;
-      const thumbnail = `${serverUrl}/images/dummy/${thumbnailNumber}.jpeg`;
+      const thumbnail = publicImageUrl(`dummy/${thumbnailNumber}.jpeg`);
 
       const createdAt = currentSeoulTimestamp(); // Seoul local time, see common/utils/date.util.ts
       const uuid = randomUUID();

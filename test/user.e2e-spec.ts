@@ -26,6 +26,15 @@ import {
   TEST_IMAGE,
 } from './utils/test-app';
 
+/**
+ * Full URL of the bundled default profile picture, built from the SAME
+ * SERVER_URL the app uses (set in test/setup-env.ts). Asserting the exact URL
+ * proves the server builds it from configuration instead of a hard-coded IP.
+ * (The file name really is spelled "dafault"; it is kept for compatibility
+ * with URLs already stored in the database.)
+ */
+const DEFAULT_THUMBNAIL_URL = `${process.env.SERVER_URL}/images/default/dafault_thumbnail.png`;
+
 describe('User (e2e)', () => {
   let app: NestExpressApplication;
   // The in-memory HTTP server that supertest sends requests to.
@@ -56,7 +65,7 @@ describe('User (e2e)', () => {
         email: 'newbie@gmail.com',
         username: 'Newbie',
         // New accounts get the bundled default picture.
-        thumbnail: expect.stringContaining('/images/default/'),
+        thumbnail: DEFAULT_THUMBNAIL_URL,
         bookMarks: [],
         statusMessage: '',
         totalPostCount: 0,
@@ -178,7 +187,7 @@ describe('User (e2e)', () => {
         .delete('/user/thumbnail')
         .set(bearer(token))
         .expect(200);
-      expect(reset.body.updatedThumbnail).toContain('/images/default/');
+      expect(reset.body.updatedThumbnail).toBe(DEFAULT_THUMBNAIL_URL);
     });
   });
 

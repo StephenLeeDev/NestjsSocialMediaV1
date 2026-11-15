@@ -11,8 +11,6 @@ import {
 } from 'typeorm';
 import { UserChatRoomEntity } from '../chatroom/user-chatroom.entity';
 
-const serverUrl = 'http://192.168.1.251:3001';
-
 @Entity()
 @Unique(['email'])
 export class User extends BaseEntity {
@@ -36,7 +34,11 @@ export class User extends BaseEntity {
   @Column()
   createdAt: Date;
 
-  @Column({ default: `${serverUrl}/images/default/dafault_thumbnail.png` })
+  // Full URL of the profile picture.
+  // There is intentionally NO database default: the default picture's URL depends
+  // on SERVER_URL, which is configuration, not schema. New accounts get it in
+  // AuthRepository.createUser via defaultThumbnailUrl().
+  @Column()
   thumbnail: string;
 
   @Column('int', { array: true, nullable: false })
