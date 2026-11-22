@@ -4,11 +4,11 @@
  * ============================================================================
  *
  * Responsibility: HTTP only (routes, parsing, file upload, Swagger). Every
- * rule lives in UserService. All routes require a signed-in user; `@GetUser()`
+ * rule lives in UserService (or PostReactionService for the bookmarks). All routes require a signed-in user; `@GetUser()`
  * gives the User entity the JWT belongs to.
  *
  * Route order matters: fixed paths (`/thumbnail`, `/statusMessage`,
- * `/search/users`, `/post/bookmark`) are matched before `/:userEmail` because
+ * `/search/users`, `/bookmarks`, `/post/bookmark`) are matched before `/:userEmail` because
  * they are more specific, but keep new fixed routes ABOVE `/:userEmail` anyway.
  */
 import {
@@ -47,6 +47,8 @@ import {
   uploadDestination,
 } from '../lib/multerOptions';
 import { PostIdDto } from '../post/dto/post-id.dto';
+import { PostResponse } from '../post/dto/post-info.dto';
+import { PostReactionService } from '../post/reaction/post-reaction.service';
 import { StatusMessageDto } from './dto/status-message.dto';
 import { UpdatedUserThumbnailDto } from './dto/updated-user-thumbnail.dto';
 import { UserInfoIncludingIsFollowingDto } from './dto/user-info-including-isfollowing.dto';
@@ -60,7 +62,12 @@ import { UserService } from './user.service';
 @ApiBearerAuth('Secret1234')
 @Controller('user')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    // Bookmarks are stored by the post module (post_bookmark table); these
+    // routes live under /user because they are the signed-in user's data.
+    private readonly reactionService: PostReactionService,
+  ) {}
 
   // ==========================================================================
   //  Profiles
@@ -105,7 +112,35 @@ export class UserController {
   //  Bookmarks
   // ==========================================================================
 
-  @ApiOperation({ summary: `Bookmark a post, or remove the bookmark` })
+  @ApiOperation({
+    summary: `Your bookmarked posts, the most recently bookmarked first`,
+  })
+  @ApiQuery({
+    name: 'page',
+    description: `1-based page number`,
+    required: true,
+  })
+  @ApiQuery({ name: 'limit', description: `Posts per page`, required: true })
+  @ApiResponse({ type: PostResponse, status: 200, description: 'Success' })
+  // A fixed path: must stay ABOVE `/:userEmail` (see the note at the top).
+  @Get('/bookmarks')
+  getBookmarkedPosts(
+    @GetUser() user: User,
+    // Missing or non-numeric values → 400 (ParseIntPipe).
+    @Query('page', ParseIntPipe) page: number,
+    @Query('limit', ParseIntPipe) limit: number,
+  ): Promise<PostResponse> {
+    return this.reactionService.getBookmarkedPosts(user.email, page, limit);
+  }
+
+  /**
+   * OLD toggle endpoint, kept so the current Flutter app keeps working.
+   * Remove it once the app uses PUT / DELETE /post/:id/bookmark.
+   */
+  @ApiOperation({
+    summary: `OLD: toggle a bookmark. Use PUT / DELETE /post/{id}/bookmark`,
+    deprecated: true,
+  })
   @ApiBody({ type: PostIdDto })
   @ApiResponse({ status: 201, description: 'Success' })
   @Post('/post/bookmark')
@@ -113,7 +148,7 @@ export class UserController {
     @GetUser() user: User,
     @Body() postIdDto: PostIdDto,
   ): Promise<void> {
-    return this.userService.toggleBookmark(user, postIdDto.postId);
+    return this.reactionService.toggleBookmark(postIdDto.postId, user.email);
   }
 
   // ==========================================================================

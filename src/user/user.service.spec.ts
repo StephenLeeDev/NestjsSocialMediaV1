@@ -6,17 +6,15 @@
  * Same approach as the post and comment service tests: UserService is built
  * with FAKE dependencies, so only its own rules are tested, without a database.
  *
- * The interesting part is the bookmark toggle, which runs inside a database
- * transaction. The fake DataSource below calls the transaction callback with a
- * fake "entity manager", so the test can inspect exactly what would be written.
+ * (Bookmarks moved to PostReactionService with the post_bookmark join table;
+ * their tests are in post/reaction/post-reaction.service.spec.ts. Here only
+ * the old `bookMarks` field of your own profile is checked.)
  *
  * Run with: npm test
  */
 import { NotFoundException } from '@nestjs/common';
-import { DataSource } from 'typeorm';
 import { FollowService } from '../follow/follow.service';
-import { PostEntity } from '../post/post.entity';
-import { PostService } from '../post/post.service';
+import { PostReactionService } from '../post/reaction/post-reaction.service';
 import { User } from './user.entity';
 import { UserRepository } from './user.repository';
 import { UserService } from './user.service';
@@ -35,7 +33,6 @@ function makeUser(email: string, overrides: Partial<User> = {}): User {
     username: email.split('@')[0],
     thumbnail: 'thumb.png',
     statusMessage: 'hi',
-    bookMarks: [],
     ...overrides,
   } as User;
 }
@@ -54,9 +51,7 @@ describe('UserService', () => {
     searchByUsername: jest.Mock;
   };
   let followService: { isFollowing: jest.Mock };
-  let postService: { getVisiblePostEntity: jest.Mock };
-  // The fake transaction's entity manager: rows it "finds" and the updates it receives.
-  let manager: { findOneByOrFail: jest.Mock; update: jest.Mock };
+  let reactionService: { getBookmarkedPostIds: jest.Mock };
   let service: UserService;
 
   beforeEach(() => {
@@ -67,41 +62,33 @@ describe('UserService', () => {
       searchByUsername: jest.fn(),
     };
     followService = { isFollowing: jest.fn().mockResolvedValue(false) };
-    // By default every post is visible.
-    postService = { getVisiblePostEntity: jest.fn().mockResolvedValue({}) };
-    manager = { findOneByOrFail: jest.fn(), update: jest.fn() };
-
-    // `transaction(callback)` simply runs the callback with the fake manager.
-    const dataSource = {
-      transaction: jest.fn(async (callback) => callback(manager)),
+    // The viewer has bookmarked posts 5 and 8.
+    reactionService = {
+      getBookmarkedPostIds: jest.fn().mockResolvedValue([5, 8]),
     };
 
     service = new UserService(
       userRepository as unknown as UserRepository,
       followService as unknown as FollowService,
-      postService as unknown as PostService,
-      dataSource as unknown as DataSource,
+      reactionService as unknown as PostReactionService,
     );
   });
 
   describe('profiles', () => {
-    it('includes bookmarks in your OWN profile', async () => {
-      const me = makeUser(ME, { bookMarks: [5] });
-
-      await expect(service.getMyProfile(me)).resolves.toEqual({
+    it('includes your bookmarked post ids in your OWN profile', async () => {
+      await expect(service.getMyProfile(makeUser(ME))).resolves.toEqual({
         email: ME,
         username: 'me',
         thumbnail: 'thumb.png',
         statusMessage: 'hi',
         ...COUNTS,
-        bookMarks: [5],
+        bookMarks: [5, 8],
       });
+      expect(reactionService.getBookmarkedPostIds).toHaveBeenCalledWith(ME);
     });
 
     it("never includes bookmarks in someone else's profile", async () => {
-      userRepository.findOneBy.mockResolvedValue(
-        makeUser(OTHER, { bookMarks: [5] }),
-      );
+      userRepository.findOneBy.mockResolvedValue(makeUser(OTHER));
       followService.isFollowing.mockResolvedValue(true);
 
       const profile = await service.getProfile(OTHER, ME);
@@ -112,6 +99,7 @@ describe('UserService', () => {
         ...COUNTS,
       });
       expect(profile).not.toHaveProperty('bookMarks');
+      expect(reactionService.getBookmarkedPostIds).not.toHaveBeenCalled();
       // isFollowing is asked from the VIEWER's point of view.
       expect(followService.isFollowing).toHaveBeenCalledWith(ME, OTHER);
     });
@@ -122,83 +110,6 @@ describe('UserService', () => {
       await expect(service.getProfile(OTHER, ME)).rejects.toBeInstanceOf(
         NotFoundException,
       );
-    });
-  });
-
-  describe('toggleBookmark', () => {
-    /** Makes the fake transaction "find" this user and this post. */
-    function givenRows(user: User, post: Partial<PostEntity>) {
-      manager.findOneByOrFail.mockImplementation(async (entity) =>
-        entity === User ? user : post,
-      );
-    }
-
-    it('adds the bookmark on BOTH sides', async () => {
-      givenRows(makeUser(ME, { bookMarks: [1] }), {
-        id: 9,
-        bookMarkedUsers: [OTHER],
-      });
-
-      await service.toggleBookmark(makeUser(ME), 9);
-
-      expect(manager.update).toHaveBeenCalledWith(
-        User,
-        { email: ME },
-        { bookMarks: [1, 9] },
-      );
-      expect(manager.update).toHaveBeenCalledWith(
-        PostEntity,
-        { id: 9 },
-        { bookMarkedUsers: [OTHER, ME] },
-      );
-    });
-
-    it('removes the bookmark on BOTH sides', async () => {
-      givenRows(makeUser(ME, { bookMarks: [1, 9] }), {
-        id: 9,
-        bookMarkedUsers: [OTHER, ME],
-      });
-
-      await service.toggleBookmark(makeUser(ME), 9);
-
-      expect(manager.update).toHaveBeenCalledWith(
-        User,
-        { email: ME },
-        { bookMarks: [1] },
-      );
-      expect(manager.update).toHaveBeenCalledWith(
-        PostEntity,
-        { id: 9 },
-        { bookMarkedUsers: [OTHER] },
-      );
-    });
-
-    it('repairs a post list that already contained the viewer (no duplicates)', async () => {
-      // The two lists disagree (possible with the old code): the user has not
-      // bookmarked post 9, but the post already lists the user.
-      givenRows(makeUser(ME, { bookMarks: [] }), {
-        id: 9,
-        bookMarkedUsers: [ME],
-      });
-
-      await service.toggleBookmark(makeUser(ME), 9);
-
-      expect(manager.update).toHaveBeenCalledWith(
-        PostEntity,
-        { id: 9 },
-        { bookMarkedUsers: [ME] },
-      );
-    });
-
-    it('writes nothing when the post is not visible (404)', async () => {
-      postService.getVisiblePostEntity.mockRejectedValue(
-        new NotFoundException(),
-      );
-
-      await expect(
-        service.toggleBookmark(makeUser(ME), 9),
-      ).rejects.toBeInstanceOf(NotFoundException);
-      expect(manager.update).not.toHaveBeenCalled();
     });
   });
 

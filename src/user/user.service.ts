@@ -9,8 +9,7 @@
  *        │
  *   UserService     → rules (THIS FILE)
  *        │              - what your own profile shows vs. someone else's
- *        │              - bookmarks: only visible posts, both sides updated
- *        │                together in ONE transaction
+ *        │              (bookmarks: post/reaction/post-reaction.service.ts)
  *        │              - search defaults
  *        │
  *   UserRepository  → database queries only
@@ -20,11 +19,9 @@
  * `User` entity that the JWT guard loaded for this request.
  */
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { DataSource } from 'typeorm';
 import { defaultThumbnailUrl } from '../common/utils/image-url.util';
 import { FollowService } from '../follow/follow.service';
-import { PostEntity } from '../post/post.entity';
-import { PostService } from '../post/post.service';
+import { PostReactionService } from '../post/reaction/post-reaction.service';
 import { UpdatedUserThumbnailDto } from './dto/updated-user-thumbnail.dto';
 import { UserInfoIncludingIsFollowingDto } from './dto/user-info-including-isfollowing.dto';
 import { UserInfoDto } from './dto/user-info.dto';
@@ -40,10 +37,8 @@ export class UserService {
     private readonly userRepository: UserRepository,
     // Answers "does the viewer follow this user?" for other profiles.
     private readonly followService: FollowService,
-    // Owns the post visibility rule; bookmarks follow it.
-    private readonly postService: PostService,
-    // Gives access to transactions (several writes that succeed or fail together).
-    private readonly dataSource: DataSource,
+    // Provides the bookmark ids for the old `bookMarks` profile field.
+    private readonly reactionService: PostReactionService,
   ) {}
 
   // ==========================================================================
@@ -54,10 +49,16 @@ export class UserService {
    * The viewer's OWN profile, including their private bookmark list.
    */
   async getMyProfile(viewer: User): Promise<UserInfoDto> {
-    const counts = await this.userRepository.countProfileStats(viewer.email);
+    // Independent lookups → run in parallel.
+    const [counts, bookMarks] = await Promise.all([
+      this.userRepository.countProfileStats(viewer.email),
+      // Kept for the current Flutter app. Unlike the old array column, this
+      // never contains deleted posts or posts that became hidden.
+      this.reactionService.getBookmarkedPostIds(viewer.email),
+    ]);
 
     const profile = this.fillProfile(new UserInfoDto(), viewer, counts);
-    profile.bookMarks = viewer.bookMarks;
+    profile.bookMarks = bookMarks;
     return profile;
   }
 
@@ -89,58 +90,6 @@ export class UserService {
     );
     profile.isFollowing = isFollowing;
     return profile;
-  }
-
-  // ==========================================================================
-  //  Bookmarks
-  // ==========================================================================
-
-  /**
-   * Bookmarks the post, or removes the bookmark if it already exists.
-   *
-   * A bookmark is stored on BOTH sides:
-   *   - user.bookMarks        → ids of the posts this user bookmarked
-   *   - post.bookMarkedUsers  → emails of the users who bookmarked this post
-   *
-   * Fixes compared to the old version:
-   *   1. The post is checked FIRST (exists and visible to the viewer → else
-   *      404). The old code saved the user's list before looking at the post,
-   *      so an unknown post id answered 404 but stayed bookmarked.
-   *   2. Both lists are updated inside ONE transaction: either both writes
-   *      are saved or neither is, so the two sides cannot disagree.
-   *   3. The post's list follows the user's list ("bookmarked or not" is
-   *      decided once), instead of each side toggling on its own.
-   *
-   * @throws NotFoundException (404) when the post is missing or hidden.
-   */
-  async toggleBookmark(viewer: User, postId: number): Promise<void> {
-    await this.postService.getVisiblePostEntity(postId, viewer.email);
-
-    await this.dataSource.transaction(async (manager) => {
-      // Re-read both rows INSIDE the transaction, so the toggle works on the
-      // current values rather than on what was loaded earlier in the request.
-      const user = await manager.findOneByOrFail(User, { email: viewer.email });
-      const post = await manager.findOneByOrFail(PostEntity, { id: postId });
-
-      const wasBookmarked = user.bookMarks.includes(postId);
-
-      const bookMarks = wasBookmarked
-        ? user.bookMarks.filter((id) => id !== postId)
-        : [...user.bookMarks, postId];
-
-      // Remove the email on "un-bookmark"; on "bookmark", add it unless it is
-      // already there (keeps the list free of duplicates).
-      const withoutViewer = post.bookMarkedUsers.filter(
-        (email) => email !== viewer.email,
-      );
-      const bookMarkedUsers = wasBookmarked
-        ? withoutViewer
-        : [...withoutViewer, viewer.email];
-
-      // `update` writes only the listed column, nothing else of the row.
-      await manager.update(User, { email: viewer.email }, { bookMarks });
-      await manager.update(PostEntity, { id: postId }, { bookMarkedUsers });
-    });
   }
 
   // ==========================================================================

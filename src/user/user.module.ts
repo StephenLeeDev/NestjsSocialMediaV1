@@ -2,8 +2,10 @@
  * Wires the user feature together.
  *
  * Imports:
- *   - PostModule   → PostService: bookmarks follow the same post visibility
- *                    rule as everything else (owned by the post module)
+ *   - PostModule   → PostReactionService: the bookmark routes under /user
+ *                    (GET /user/bookmarks, the old toggle) and the old
+ *                    `bookMarks` profile field; bookmarks are stored by the
+ *                    post module (post_bookmark table)
  *   - FollowModule → FollowService: the isFollowing flag on profiles
  */
 import { Module } from '@nestjs/common';

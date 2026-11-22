@@ -49,13 +49,7 @@ export interface UserSearchQuery {
  */
 export type NewUser = Pick<
   User,
-  | 'email'
-  | 'uuid'
-  | 'username'
-  | 'socialType'
-  | 'createdAt'
-  | 'thumbnail'
-  | 'bookMarks'
+  'email' | 'uuid' | 'username' | 'socialType' | 'createdAt' | 'thumbnail'
 > &
   Partial<Pick<User, 'statusMessage'>>;
 

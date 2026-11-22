@@ -45,9 +45,8 @@ export class User extends BaseEntity {
   @Column()
   thumbnail: string;
 
-  // IDs of the posts this user bookmarked (private; see UserService.toggleBookmark).
-  @Column('int', { array: true, nullable: false })
-  bookMarks: number[];
+  // (The array column `bookMarks` that used to be here was replaced by the
+  // join table post_bookmark; see post/reaction/post-bookmark.entity.ts.)
 
   @Column({ default: '' })
   statusMessage: string;

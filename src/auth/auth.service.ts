@@ -139,7 +139,6 @@ export class AuthService {
         createdAt: new Date(currentSeoulTimestamp()),
         // Every new account starts with the bundled default profile picture.
         thumbnail: defaultThumbnailUrl(),
-        bookMarks: [],
       },
     ]);
     this.logger.verbose(`Account ${email} has been created`);

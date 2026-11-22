@@ -46,7 +46,7 @@ function makeUser(email: string): User {
 
 /**
  * Builds a post as the repository would return it: PUBLIC, written by AUTHOR,
- * no likes. Pass `overrides` to change only what a test cares about.
+ * without numbers (likes etc. are attached by the fake `attachStats`). Pass `overrides` to change only what a test cares about.
  */
 function makePost(overrides: Partial<PostEntity> = {}): PostEntity {
   return {
@@ -57,9 +57,6 @@ function makePost(overrides: Partial<PostEntity> = {}): PostEntity {
     createdAt: new Date('2026-01-01T00:00:00Z'),
     updatedAt: new Date('2026-01-01T00:00:00Z'),
     imageUrls: ['a.jpeg'],
-    likes: [],
-    bookMarkedUsers: [],
-    commentCount: 0,
     ...overrides,
   } as PostEntity;
 }
@@ -82,6 +79,7 @@ describe('PostService', () => {
     findOneBy: jest.Mock;
     findOneWithAuthor: jest.Mock;
     findPageOfPublicPosts: jest.Mock;
+    attachStats: jest.Mock;
   };
   let service: PostService;
 
@@ -95,6 +93,18 @@ describe('PostService', () => {
       findOneBy: jest.fn(),
       findOneWithAuthor: jest.fn(),
       findPageOfPublicPosts: jest.fn(),
+      // Pretends the database computed these numbers for the viewer: one
+      // like, by the viewer; not bookmarked; two comments.
+      attachStats: jest.fn(async (posts: PostEntity[]) => {
+        for (const post of posts) {
+          Object.assign(post, {
+            likeCount: 1,
+            isLiked: true,
+            isBookmarked: false,
+            commentCount: 2,
+          });
+        }
+      }),
     };
 
     // PostService is a plain class, so it can be constructed directly with the
@@ -173,23 +183,28 @@ describe('PostService', () => {
       );
     });
 
-    it('computes isLiked / isBookmarked for the viewer', async () => {
-      postRepository.findOneWithAuthor.mockResolvedValue(
-        makePost({ likes: [VIEWER], bookMarkedUsers: [AUTHOR] }),
-      );
+    it('returns the numbers computed for the VIEWER', async () => {
+      postRepository.findOneWithAuthor.mockResolvedValue(makePost());
 
       await expect(service.getPost(1, VIEWER)).resolves.toMatchObject({
         likeCount: 1,
-        isLiked: true, // the viewer liked it
-        isBookmarked: false, // only the author bookmarked it
+        isLiked: true,
+        isBookmarked: false,
+        commentCount: 2,
       });
+      // The numbers were computed for the viewer, not for the author.
+      expect(postRepository.attachStats).toHaveBeenCalledWith(
+        [expect.objectContaining({ id: 1 })],
+        VIEWER,
+      );
     });
   });
 
   describe('getPostsByAuthor', () => {
-    it('asks the repository for the author and maps flags for the viewer', async () => {
+    it('asks the repository for the author, with the viewer for the flags', async () => {
+      // The repository attaches the numbers itself for page queries.
       postRepository.findPageOfPublicPosts.mockResolvedValue([
-        [makePost({ likes: [VIEWER] })],
+        [makePost({ isLiked: true })],
         1,
       ]);
 
@@ -199,6 +214,7 @@ describe('PostService', () => {
         page: 2,
         limit: 10,
         authorEmail: AUTHOR,
+        viewerEmail: VIEWER,
       });
       expect(result.total).toBe(1);
       expect(result.posts[0].isLiked).toBe(true);
@@ -225,40 +241,6 @@ describe('PostService', () => {
         service.updateDescription(VIEWER, { postId: 1, description: 'x' }),
       ).rejects.toBeInstanceOf(UnauthorizedException);
       expect(postRepository.save).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('toggleLike', () => {
-    it('adds a like when the viewer has not liked the post yet', async () => {
-      postRepository.findOneBy.mockResolvedValue(makePost({ likes: [AUTHOR] }));
-
-      await expect(service.toggleLike(1, VIEWER)).resolves.toEqual({
-        likeCount: 2,
-      });
-      expect(postRepository.save).toHaveBeenCalledWith(
-        expect.objectContaining({ likes: [AUTHOR, VIEWER] }),
-      );
-    });
-
-    it('removes the like when the viewer already liked the post', async () => {
-      postRepository.findOneBy.mockResolvedValue(
-        makePost({ likes: [AUTHOR, VIEWER] }),
-      );
-
-      await expect(service.toggleLike(1, VIEWER)).resolves.toEqual({
-        likeCount: 1,
-      });
-      expect(postRepository.save).toHaveBeenCalledWith(
-        expect.objectContaining({ likes: [AUTHOR] }),
-      );
-    });
-
-    it('throws 404 when the post does not exist', async () => {
-      postRepository.findOneBy.mockResolvedValue(null);
-
-      await expect(service.toggleLike(1, VIEWER)).rejects.toBeInstanceOf(
-        NotFoundException,
-      );
     });
   });
 

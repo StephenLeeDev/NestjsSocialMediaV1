@@ -106,7 +106,6 @@ describe('AuthService', () => {
         email: JOHN.email,
         username: JOHN.username,
         socialType: AuthSocialType.GOOGLE,
-        bookMarks: [],
       });
       // Generated values: a UUID, a creation time and the default picture.
       expect(row.uuid).toMatch(/^[0-9a-f-]{36}$/);

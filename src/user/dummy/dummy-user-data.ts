@@ -64,7 +64,6 @@ export function buildDummyUsers(): NewUser[] {
     socialType: AuthSocialType.GOOGLE,
     createdAt: new Date(start + index),
     thumbnail: publicImageUrl(`dummy/${randomInt(1, DUMMY_IMAGE_COUNT)}.jpeg`),
-    bookMarks: [],
     statusMessage: randomSentence(3, 12),
   }));
 }

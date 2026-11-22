@@ -21,18 +21,17 @@ import { PostEntity } from './post.entity';
 /**
  * Converts a post loaded from the database into the API response shape.
  *
- * @param post        The post. It must have been loaded WITH its author
- *                    (`post.user`), and `post.commentCount` should be filled in
- *                    by `PostRepository.attachCommentCounts` (treated as 0 if not).
- * @param viewerEmail Email of the signed-in user making the request. The
- *                    "personal" flags `isLiked` / `isBookmarked` are computed
- *                    for THIS user, because the same post looks different to
- *                    different people.
+ * @param post The post. It must have been loaded WITH its author
+ *             (`post.user`). Its numbers (`commentCount`, `likeCount`,
+ *             `isLiked`, `isBookmarked`) should be filled in by
+ *             `PostRepository.attachStats` for the user making the request;
+ *             missing values count as 0 / false (e.g. a brand-new post).
+ *
+ * (It used to take the viewer's email as a second argument, to look the
+ * viewer up in the post's arrays of likes and bookmarks. Those arrays are
+ * gone; attachStats now asks the database for the viewer's flags.)
  */
-export function toPostInfoDto(
-  post: PostEntity,
-  viewerEmail: string,
-): PostInfoDto {
+export function toPostInfoDto(post: PostEntity): PostInfoDto {
   const dto = new PostInfoDto();
   dto.id = post.id;
   dto.description = post.description;
@@ -43,14 +42,12 @@ export function toPostInfoDto(
   dto.updatedAt = post.updatedAt;
   dto.imageUrls = post.imageUrls;
 
-  // `likes` and `bookMarkedUsers` are lists of user emails stored on the post.
-  // The response only reveals the COUNT of likes plus the viewer's own status,
-  // never the list of who liked it.
-  dto.likeCount = post.likes.length;
-  dto.isLiked = post.likes.includes(viewerEmail);
-  dto.isBookmarked = post.bookMarkedUsers.includes(viewerEmail);
-
-  // `commentCount` is not a database column; the repository computes it.
+  // None of these are database columns: PostRepository.attachStats computes
+  // them. The response reveals the COUNT of likes plus the viewer's own
+  // status, never who liked or bookmarked the post.
+  dto.likeCount = post.likeCount ?? 0;
+  dto.isLiked = post.isLiked ?? false;
+  dto.isBookmarked = post.isBookmarked ?? false;
   dto.commentCount = post.commentCount ?? 0;
 
   return dto;
