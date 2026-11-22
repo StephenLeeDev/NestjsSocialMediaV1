@@ -32,6 +32,7 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import { JwtPayload } from '../../auth/jwt-payload.interface';
 import { MessageInfoDto } from '../../message/dto/message-info.dto';
 import { User } from '../../user/user.entity';
 import { UserRepository } from '../../user/user.repository';
@@ -100,7 +101,8 @@ export class ChatGateway implements OnGatewayInit {
     }
 
     // Throws if the token is malformed, signed with another secret or expired.
-    const payload = await this.jwtService.verifyAsync<{ email: string }>(token);
+    // The payload shape is shared with AuthService and JwtStrategy.
+    const payload = await this.jwtService.verifyAsync<JwtPayload>(token);
 
     const user = await this.userRepository.findOneBy({ email: payload.email });
     if (!user) {

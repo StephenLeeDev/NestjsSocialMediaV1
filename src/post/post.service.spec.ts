@@ -21,7 +21,6 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { AuthRepository } from '../auth/auth.repository';
 import { User } from '../user/user.entity';
 import { UserRepository } from '../user/user.repository';
 import { PostStatus } from './post-status.enum';
@@ -99,12 +98,11 @@ describe('PostService', () => {
     };
 
     // PostService is a plain class, so it can be constructed directly with the
-    // fakes. The user/auth repositories are only used by createDummyPosts,
+    // fakes. The user repository is only used by createDummyPosts,
     // which is not unit tested here, so empty objects are enough.
     service = new PostService(
       postRepository as unknown as PostRepository,
       {} as UserRepository,
-      {} as AuthRepository,
     );
   });
 

@@ -12,7 +12,6 @@ import { CommentService } from './comment.service';
 import { CommentRepository } from './comment.repository';
 import { PostModule } from '../post/post.module';
 import { UserRepository } from '../user/user.repository';
-import { AuthRepository } from '../auth/auth.repository';
 
 @Module({
   imports: [AuthModule, PostModule],
@@ -22,7 +21,6 @@ import { AuthRepository } from '../auth/auth.repository';
     CommentRepository,
     // Used by CommentService.createDummyComments to find or create dummy authors.
     UserRepository,
-    AuthRepository,
   ],
 })
 export class CommentModule {}

@@ -17,7 +17,6 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { AuthRepository } from '../auth/auth.repository';
 import { PostEntity } from '../post/post.entity';
 import { PostService } from '../post/post.service';
 import { User } from '../user/user.entity';
@@ -107,7 +106,6 @@ describe('CommentService', () => {
       commentRepository as unknown as CommentRepository,
       postService as unknown as PostService,
       {} as UserRepository, // only used by createDummyComments
-      {} as AuthRepository, // only used by createDummyComments
     );
   });
 

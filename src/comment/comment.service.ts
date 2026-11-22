@@ -27,12 +27,12 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { AuthRepository } from '../auth/auth.repository';
 import { currentSeoulTimestamp } from '../common/utils/date.util';
 import { randomSentence } from '../common/utils/random.util';
 import { PostEntity } from '../post/post.entity';
 import { PostService } from '../post/post.service';
 import { User } from '../user/user.entity';
+import { findOrCreateDummyAuthors } from '../user/dummy/dummy-user-data';
 import { UserRepository } from '../user/user.repository';
 import { CommentType } from './comment-type.enum';
 import { CommentEntity } from './comment.entity';
@@ -54,9 +54,8 @@ export class CommentService {
     private readonly commentRepository: CommentRepository,
     // Owns the post visibility rule (PRIVATE posts are hidden from others).
     private readonly postService: PostService,
-    // The two repositories below are only needed by createDummyComments.
+    // Only needed by createDummyComments (to find or create dummy authors).
     private readonly userRepository: UserRepository,
-    private readonly authRepository: AuthRepository,
   ) {}
 
   // ==========================================================================
@@ -207,13 +206,11 @@ export class CommentService {
     );
     const parent = await this.resolveParent(post, dto.parentCommentId);
 
-    // TODO(auth/user module refactor): share "pick dummy authors" with
-    // PostService instead of repeating it here.
-    let authors = await this.userRepository.find({ take: DUMMY_COMMENT_COUNT });
-    if (authors.length < DUMMY_COMMENT_COUNT) {
-      await this.authRepository.createDummyUsers();
-      authors = await this.userRepository.find({ take: DUMMY_COMMENT_COUNT });
-    }
+    // Shared with PostService (see user/dummy/dummy-user-data.ts).
+    const authors = await findOrCreateDummyAuthors(
+      this.userRepository,
+      DUMMY_COMMENT_COUNT,
+    );
 
     for (const author of authors) {
       await this.saveNewComment(author, post, parent, randomSentence(3, 12));

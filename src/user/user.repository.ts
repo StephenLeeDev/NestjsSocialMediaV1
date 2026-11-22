@@ -40,10 +40,55 @@ export interface UserSearchQuery {
   limit: number;
 }
 
+/**
+ * Everything needed to create a user row.
+ *
+ * Listed explicitly (instead of `Partial<User>`) so the compiler complains
+ * when a caller forgets a required column. `statusMessage` is optional
+ * because the column has a database default ('').
+ */
+export type NewUser = Pick<
+  User,
+  | 'email'
+  | 'uuid'
+  | 'username'
+  | 'socialType'
+  | 'createdAt'
+  | 'thumbnail'
+  | 'bookMarks'
+> &
+  Partial<Pick<User, 'statusMessage'>>;
+
 @Injectable()
 export class UserRepository extends Repository<User> {
   constructor(dataSource: DataSource) {
     super(User, dataSource.createEntityManager());
+  }
+
+  /**
+   * Creates the given users, SKIPPING every user whose email already exists.
+   *
+   * Uses `INSERT ... ON CONFLICT DO NOTHING` (TypeORM: `.orIgnore()`), which
+   * the database performs atomically. That gives two guarantees:
+   *
+   *   1. An existing account is never changed. (The old code used `save()`,
+   *      which turns into an UPDATE when the primary key already exists, so
+   *      creating the dummy users silently overwrote a real "rose@gmail.com".)
+   *   2. Two requests creating the same account at the same moment cannot
+   *      both fail or create a duplicate: one inserts, the other is skipped.
+   *
+   * Used by sign-up (one user) and by the development dummy data (ten users).
+   */
+  async insertIfMissing(users: NewUser[]): Promise<void> {
+    if (users.length === 0) {
+      return; // an INSERT without rows would be a syntax error
+    }
+    await this.createQueryBuilder()
+      .insert()
+      .into(User)
+      .values(users)
+      .orIgnore()
+      .execute();
   }
 
   /**

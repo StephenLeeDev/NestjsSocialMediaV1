@@ -31,9 +31,9 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { AuthRepository } from '../auth/auth.repository';
 import { currentSeoulTimestamp } from '../common/utils/date.util';
 import { User } from '../user/user.entity';
+import { findOrCreateDummyAuthors } from '../user/dummy/dummy-user-data';
 import { UserRepository } from '../user/user.repository';
 import { CreatePostDto } from './dto/create-post.dto';
 import { PostInfoDto, PostResponse } from './dto/post-info.dto';
@@ -55,9 +55,8 @@ export class PostService {
 
   constructor(
     private readonly postRepository: PostRepository,
-    // The two repositories below are only needed by createDummyPosts.
+    // Only needed by createDummyPosts (to find or create dummy authors).
     private readonly userRepository: UserRepository,
-    private readonly authRepository: AuthRepository,
   ) {}
 
   // ==========================================================================
@@ -352,12 +351,10 @@ export class PostService {
    * creating the dummy users first when there are not enough.
    */
   private async pickDummyAuthors(): Promise<User[]> {
-    let users = await this.userRepository.find({ take: DUMMY_POST_COUNT });
-
-    if (users.length < DUMMY_POST_COUNT) {
-      await this.authRepository.createDummyUsers();
-      users = await this.userRepository.find({ take: DUMMY_POST_COUNT });
-    }
+    const users = await findOrCreateDummyAuthors(
+      this.userRepository,
+      DUMMY_POST_COUNT,
+    );
 
     // If there are still fewer users than posts, reuse users from the start
     // of the list to fill up, then shuffle.

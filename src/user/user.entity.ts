@@ -41,7 +41,7 @@ export class User extends BaseEntity {
   // Full URL of the profile picture.
   // There is intentionally NO database default: the default picture's URL depends
   // on SERVER_URL, which is configuration, not schema. New accounts get it in
-  // AuthRepository.createUser via defaultThumbnailUrl().
+  // AuthService.signIn via defaultThumbnailUrl().
   @Column()
   thumbnail: string;
 
