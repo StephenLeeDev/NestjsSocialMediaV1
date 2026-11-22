@@ -59,8 +59,12 @@ describe('Auth (e2e)', () => {
         .send(credentials)
         .expect(201);
 
-      // The response contains only the token (the Flutter app stores it).
-      expect(res.body).toEqual({ accessToken: expect.any(String) });
+      // The response contains the two tokens (the Flutter app stores them).
+      // The refresh token is covered in detail by auth-refresh.e2e-spec.ts.
+      expect(res.body).toEqual({
+        accessToken: expect.any(String),
+        refreshToken: expect.any(String),
+      });
     });
 
     it('signs an existing account in again without creating a second one', async () => {

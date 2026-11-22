@@ -85,7 +85,9 @@ describe('Images (e2e)', () => {
       const uploaded = await uploadThumbnail();
 
       // The response still contains full URLs ...
-      expect(post.imageUrls[0]).toMatch(/^https?:\/\/.+\/images\/[\w-]+\.jpeg$/);
+      expect(post.imageUrls[0]).toMatch(
+        /^https?:\/\/.+\/images\/[\w-]+\.jpeg$/,
+      );
       expect(uploaded).toMatch(/^https?:\/\/.+\/images\/[\w-]+\.jpeg$/);
 
       // ... but the database only keeps the file name.

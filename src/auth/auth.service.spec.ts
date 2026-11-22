@@ -27,6 +27,7 @@ import { AuthSocialType } from './auth-social-type.enum';
 import { AuthService } from './auth.service';
 import { AuthCredentialsDto } from './dto/auth-credential.dto';
 import { JwtStrategy } from './jwt.strategy';
+import { RefreshTokenService } from './refresh-token/refresh-token.service';
 
 // ----------------------------------------------------------------------------
 //  Test data helpers
@@ -64,6 +65,11 @@ describe('AuthService', () => {
     insertIfMissing: jest.Mock;
   };
   let jwtService: { signAsync: jest.Mock };
+  let refreshTokenService: {
+    issue: jest.Mock;
+    rotate: jest.Mock;
+    revokeSession: jest.Mock;
+  };
   let service: AuthService;
 
   // The service logs sign-ins and conflicts; keep the test output clean.
@@ -84,9 +90,16 @@ describe('AuthService', () => {
         return `token-for-${payload.email}`;
       }),
     };
+    // The "refresh token" names the user too, so tests can see who it is for.
+    refreshTokenService = {
+      issue: jest.fn(async (email: string) => `refresh-for-${email}`),
+      rotate: jest.fn(),
+      revokeSession: jest.fn(),
+    };
     service = new AuthService(
       userRepository as unknown as UserRepository,
       jwtService as unknown as JwtService,
+      refreshTokenService as unknown as RefreshTokenService,
     );
   });
 
@@ -94,7 +107,10 @@ describe('AuthService', () => {
     it('creates the account on the first sign-in and returns a token', async () => {
       const result = await service.signIn(JOHN);
 
-      expect(result).toEqual({ accessToken: 'token-for-john@gmail.com' });
+      expect(result).toEqual({
+        accessToken: 'token-for-john@gmail.com',
+        refreshToken: 'refresh-for-john@gmail.com',
+      });
       expect(jwtService.signAsync).toHaveBeenCalledWith({
         email: JOHN.email,
       });
@@ -118,7 +134,10 @@ describe('AuthService', () => {
 
       const result = await service.signIn(JOHN);
 
-      expect(result).toEqual({ accessToken: 'token-for-john@gmail.com' });
+      expect(result).toEqual({
+        accessToken: 'token-for-john@gmail.com',
+        refreshToken: 'refresh-for-john@gmail.com',
+      });
       expect(userRepository.insertIfMissing).not.toHaveBeenCalled();
     });
 
@@ -132,7 +151,10 @@ describe('AuthService', () => {
 
       const result = await service.signIn(JOHN);
 
-      expect(result).toEqual({ accessToken: 'token-for-john@gmail.com' });
+      expect(result).toEqual({
+        accessToken: 'token-for-john@gmail.com',
+        refreshToken: 'refresh-for-john@gmail.com',
+      });
       expect(userRepository.findOneByOrFail).toHaveBeenCalledWith({
         email: JOHN.email,
       });
@@ -150,11 +172,47 @@ describe('AuthService', () => {
     });
   });
 
+  describe('refresh', () => {
+    it('returns a new access token for the rotated session', async () => {
+      refreshTokenService.rotate.mockResolvedValue({
+        userEmail: JOHN.email,
+        refreshToken: 'next-refresh',
+      });
+
+      await expect(service.refresh('old-refresh')).resolves.toEqual({
+        accessToken: 'token-for-john@gmail.com',
+        refreshToken: 'next-refresh',
+      });
+      expect(refreshTokenService.rotate).toHaveBeenCalledWith('old-refresh');
+    });
+
+    it('issues no access token when the refresh token is rejected', async () => {
+      refreshTokenService.rotate.mockRejectedValue(new UnauthorizedException());
+
+      await expect(service.refresh('bad')).rejects.toThrow(
+        UnauthorizedException,
+      );
+      expect(jwtService.signAsync).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('logout', () => {
+    it('revokes the session of the refresh token', async () => {
+      await service.logout('some-refresh');
+      expect(refreshTokenService.revokeSession).toHaveBeenCalledWith(
+        'some-refresh',
+      );
+    });
+  });
+
   describe('signInAsTestUser', () => {
     it('signs in as testUser@gmail.com like a normal sign-in', async () => {
       const result = await service.signInAsTestUser();
 
-      expect(result).toEqual({ accessToken: 'token-for-testUser@gmail.com' });
+      expect(result).toEqual({
+        accessToken: 'token-for-testUser@gmail.com',
+        refreshToken: 'refresh-for-testUser@gmail.com',
+      });
       expect(insertedRows(userRepository.insertIfMissing)[0]).toMatchObject({
         email: 'testUser@gmail.com',
         username: 'testUser',
