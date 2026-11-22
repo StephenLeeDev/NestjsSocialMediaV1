@@ -11,7 +11,8 @@
  *        │              - does the post exist? (404)
  *        │              - is the caller allowed to do this? (401)
  *        │              - who can see PRIVATE posts
- *        │              - like / unlike, PUBLIC / PRIVATE toggles
+ *        │              - PUBLIC / PRIVATE toggle
+ *        │              (likes and bookmarks: reaction/post-reaction.service.ts)
  *        │
  *   PostRepository  → database queries only
  *   post.mapper.ts  → entity → response DTO
@@ -37,7 +38,6 @@ import { findOrCreateDummyAuthors } from '../user/dummy/dummy-user-data';
 import { UserRepository } from '../user/user.repository';
 import { CreatePostDto } from './dto/create-post.dto';
 import { PostInfoDto, PostResponse } from './dto/post-info.dto';
-import { PostLikeCountDto } from './dto/post-like-count.dto';
 import { UpdatePostDescriptionDto } from './dto/update-post-description.dto';
 import { randomSentence, shuffle } from '../common/utils/random.util';
 import { randomDummyImageSets } from './dummy/dummy-post-data';
@@ -89,15 +89,13 @@ export class PostService {
       createdAt: now,
       updatedAt: now,
       imageUrls,
-      // Nobody has liked or bookmarked a brand-new post yet.
-      likes: [],
-      bookMarkedUsers: [],
     });
     await this.postRepository.save(post);
     this.logger.verbose(`${author.email} created post ${post.id}`);
 
-    // A new post has no comments; the mapper treats the missing count as 0.
-    return toPostInfoDto(post, author.email);
+    // A brand-new post has no comments, likes or bookmarks yet; the mapper
+    // treats the missing numbers as 0 / false.
+    return toPostInfoDto(post);
   }
 
   // ==========================================================================
@@ -113,11 +111,9 @@ export class PostService {
     const [posts, total] = await this.postRepository.findPageOfPublicPosts({
       page,
       limit,
+      viewerEmail,
     });
-    return {
-      posts: posts.map((post) => toPostInfoDto(post, viewerEmail)),
-      total,
-    };
+    return { posts: posts.map(toPostInfoDto), total };
   }
 
   /**
@@ -138,11 +134,9 @@ export class PostService {
       page,
       limit,
       authorEmail,
+      viewerEmail,
     });
-    return {
-      posts: posts.map((post) => toPostInfoDto(post, viewerEmail)),
-      total,
-    };
+    return { posts: posts.map(toPostInfoDto), total };
   }
 
   /**
@@ -153,7 +147,8 @@ export class PostService {
    */
   async getPost(id: number, viewerEmail: string): Promise<PostInfoDto> {
     const post = await this.getVisiblePostEntity(id, viewerEmail);
-    return toPostInfoDto(post, viewerEmail);
+    await this.postRepository.attachStats([post], viewerEmail);
+    return toPostInfoDto(post);
   }
 
   /**
@@ -203,38 +198,8 @@ export class PostService {
     post.description = description;
     await this.postRepository.save(post);
 
-    return toPostInfoDto(post, viewerEmail);
-  }
-
-  /**
-   * Likes the post, or removes the like if the viewer already liked it.
-   *
-   * @returns The new total number of likes.
-   * @throws NotFoundException (404) when the post does not exist.
-   */
-  async toggleLike(
-    postId: number,
-    viewerEmail: string,
-  ): Promise<PostLikeCountDto> {
-    const post = await this.postRepository.findOneBy({ id: postId });
-    if (!post) {
-      throw this.postNotFound(postId);
-    }
-
-    // `likes` holds the emails of everyone who liked the post.
-    const alreadyLiked = post.likes.includes(viewerEmail);
-    post.likes = alreadyLiked
-      ? post.likes.filter((likedBy) => likedBy !== viewerEmail)
-      : [...post.likes, viewerEmail];
-    await this.postRepository.save(post);
-
-    this.logger.verbose(
-      `${viewerEmail} ${alreadyLiked ? 'unliked' : 'liked'} post ${postId}`,
-    );
-
-    const result = new PostLikeCountDto();
-    result.likeCount = post.likes.length;
-    return result;
+    await this.postRepository.attachStats([post], viewerEmail);
+    return toPostInfoDto(post);
   }
 
   /**

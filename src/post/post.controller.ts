@@ -52,8 +52,6 @@ import {
 import { User } from '../user/user.entity';
 import { CreatePostDto } from './dto/create-post.dto';
 import { PostInfoDto, PostResponse } from './dto/post-info.dto';
-import { PostIdDto } from './dto/post-id.dto';
-import { PostLikeCountDto } from './dto/post-like-count.dto';
 import { UpdatePostDescriptionDto } from './dto/update-post-description.dto';
 import { PostService } from './post.service';
 
@@ -204,19 +202,6 @@ export class PostController {
       user.email,
       updatePostDescriptionDto,
     );
-  }
-
-  @ApiOperation({ summary: 'Like the post, or remove your like' })
-  @ApiBody({ type: PostIdDto })
-  @ApiResponse({ type: PostLikeCountDto, status: 201, description: 'Success' })
-  // NOTE: `:postId` in the path is NOT used; the id comes from the body
-  // (see PostIdDto). The Flutter app depends on this, so it stays for now.
-  @Post('/:postId/like')
-  toggleLike(
-    @GetUser() user: User,
-    @Body() postIdDto: PostIdDto,
-  ): Promise<PostLikeCountDto> {
-    return this.postService.toggleLike(postIdDto.postId, user.email);
   }
 
   @ApiOperation({ summary: `Switch your own post between PUBLIC and PRIVATE` })

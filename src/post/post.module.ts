@@ -8,6 +8,9 @@ import { PostController } from './post.controller';
 import { PostService } from './post.service';
 import { MulterModule } from '@nestjs/platform-express';
 import { UserRepository } from '../user/user.repository';
+import { PostReactionController } from './reaction/post-reaction.controller';
+import { PostReactionRepository } from './reaction/post-reaction.repository';
+import { PostReactionService } from './reaction/post-reaction.service';
 
 @Module({
   imports: [
@@ -20,13 +23,21 @@ import { UserRepository } from '../user/user.repository';
       },
     }),
   ],
-  controllers: [PostController],
-  // Other modules may use PostService (e.g. CommentService checks that a post
-  // is visible to the viewer before showing or accepting its comments).
-  exports: [PostService],
+  // Likes and bookmarks have their own controller and service (in
+  // ./reaction), but belong to this module: they are things you do TO a post.
+  controllers: [PostController, PostReactionController],
+  exports: [
+    // Other modules may use PostService (e.g. CommentService checks that a
+    // post is visible to the viewer before showing or accepting its comments).
+    PostService,
+    // UserController serves GET /user/bookmarks and the old bookmark toggle.
+    PostReactionService,
+  ],
   providers: [
     PostService,
     PostRepository,
+    PostReactionService,
+    PostReactionRepository,
     // Used by PostService.createDummyPosts to find or create dummy authors.
     UserRepository,
   ],

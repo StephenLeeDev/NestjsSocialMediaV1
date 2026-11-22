@@ -51,13 +51,9 @@ export class PostEntity extends BaseEntity {
   @Column('text', { array: true, nullable: false })
   imageUrls: string[];
 
-  // Emails of the users who liked this post (a PostgreSQL text[] column).
-  @Column('text', { array: true, nullable: false })
-  likes: string[];
-
-  // Emails of the users who bookmarked this post.
-  @Column('text', { array: true, nullable: false })
-  bookMarkedUsers: string[];
+  // (The array columns `likes` and `bookMarkedUsers` that used to be here
+  // were replaced by the join tables post_like and post_bookmark; see
+  // post/reaction/post-like.entity.ts for why.)
 
   // The comments and replies of this post (the other side of CommentEntity.post).
   //
@@ -69,6 +65,17 @@ export class PostEntity extends BaseEntity {
   @OneToMany(() => CommentEntity, (comment) => comment.post)
   comments: CommentEntity[];
 
-  // NOT a database column. Filled in by PostRepository.attachCommentCounts.
+  // --------------------------------------------------------------------------
+  //  NOT database columns. Filled in by PostRepository.attachStats for the
+  //  user who is looking at the post (the "viewer"), and read by post.mapper.ts.
+  // --------------------------------------------------------------------------
+
+  /** Comments + replies of the post. */
   commentCount?: number;
+  /** How many users like the post. */
+  likeCount?: number;
+  /** Whether the viewer likes the post. */
+  isLiked?: boolean;
+  /** Whether the viewer bookmarked the post. */
+  isBookmarked?: boolean;
 }
