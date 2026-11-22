@@ -14,7 +14,7 @@
  */
 import { NotFoundException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { FollowRepository } from '../follow/follow.repository';
+import { FollowService } from '../follow/follow.service';
 import { PostEntity } from '../post/post.entity';
 import { PostService } from '../post/post.service';
 import { User } from './user.entity';
@@ -53,7 +53,7 @@ describe('UserService', () => {
     countProfileStats: jest.Mock;
     searchByUsername: jest.Mock;
   };
-  let followRepository: { getIsFollowing: jest.Mock };
+  let followService: { isFollowing: jest.Mock };
   let postService: { getVisiblePostEntity: jest.Mock };
   // The fake transaction's entity manager: rows it "finds" and the updates it receives.
   let manager: { findOneByOrFail: jest.Mock; update: jest.Mock };
@@ -66,7 +66,7 @@ describe('UserService', () => {
       countProfileStats: jest.fn().mockResolvedValue(COUNTS),
       searchByUsername: jest.fn(),
     };
-    followRepository = { getIsFollowing: jest.fn().mockResolvedValue(false) };
+    followService = { isFollowing: jest.fn().mockResolvedValue(false) };
     // By default every post is visible.
     postService = { getVisiblePostEntity: jest.fn().mockResolvedValue({}) };
     manager = { findOneByOrFail: jest.fn(), update: jest.fn() };
@@ -78,7 +78,7 @@ describe('UserService', () => {
 
     service = new UserService(
       userRepository as unknown as UserRepository,
-      followRepository as unknown as FollowRepository,
+      followService as unknown as FollowService,
       postService as unknown as PostService,
       dataSource as unknown as DataSource,
     );
@@ -102,7 +102,7 @@ describe('UserService', () => {
       userRepository.findOneBy.mockResolvedValue(
         makeUser(OTHER, { bookMarks: [5] }),
       );
-      followRepository.getIsFollowing.mockResolvedValue(true);
+      followService.isFollowing.mockResolvedValue(true);
 
       const profile = await service.getProfile(OTHER, ME);
 
@@ -113,7 +113,7 @@ describe('UserService', () => {
       });
       expect(profile).not.toHaveProperty('bookMarks');
       // isFollowing is asked from the VIEWER's point of view.
-      expect(followRepository.getIsFollowing).toHaveBeenCalledWith(ME, OTHER);
+      expect(followService.isFollowing).toHaveBeenCalledWith(ME, OTHER);
     });
 
     it('fails with 404 for an unknown user', async () => {

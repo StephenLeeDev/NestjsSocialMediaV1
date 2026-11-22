@@ -44,6 +44,14 @@ process.env.DB_DATABASE ??= 'social-media-app-v1-test';
 // so the test database always matches the current code without migrations.
 process.env.DB_SYNCHRONIZE = 'true';
 
+// Drop every table when the app starts, then let `synchronize` rebuild them.
+// Why: running the tests of an OLDER commit can leave rows the current schema
+// forbids (e.g. a follow row with NULL, which a new NOT NULL constraint rejects).
+// `synchronize` would then fail before `resetDatabase` ever runs, and every
+// test would fail with a confusing connection error. Starting from an empty
+// schema avoids that. Safe only because this is a "-test" database (see below).
+process.env.DB_DROP_SCHEMA = 'true';
+
 // SQL logging would bury the test output, so it is always off in tests.
 process.env.DB_LOGGING = 'false';
 
@@ -68,7 +76,8 @@ process.env.UPLOAD_DIR = mkdtempSync(join(tmpdir(), 'nest-e2e-uploads-'));
 // ---------------------------------------------------------------------------
 // Safety guard
 // ---------------------------------------------------------------------------
-// Every test file empties ALL tables before it runs (see `resetDatabase` in
+// Every test file drops the whole schema on startup (DB_DROP_SCHEMA above) and
+// empties ALL tables before it runs (see `resetDatabase` in
 // `test/utils/test-app.ts`). If someone accidentally pointed DB_DATABASE at the
 // development or production database, that data would be wiped.
 // Refusing to run unless the name ends with "-test" makes that mistake impossible.
