@@ -1,13 +1,20 @@
+/**
+ * Wires the message feature together.
+ *
+ * Imports ChatModule for ChatRoomService (the participant rule and the room's
+ * activity time) and ChatGateway (real-time delivery). Imports AuthModule for
+ * the JWT guard on the REST endpoints.
+ */
 import { Module } from '@nestjs/common';
-import { MessageController } from './message.controller';
-import { MessageService } from './message.service';
-import { ChatRoomRepository } from '../chatroom/chatroom.repository';
-import { MessageRepository } from './message.repository';
 import { AuthModule } from '../auth/auth.module';
+import { ChatModule } from '../chatroom/chatroom.module';
+import { MessageController } from './message.controller';
+import { MessageRepository } from './message.repository';
+import { MessageService } from './message.service';
 
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, ChatModule],
   controllers: [MessageController],
-  providers: [MessageService, ChatRoomRepository, MessageRepository],
+  providers: [MessageService, MessageRepository],
 })
 export class MessageModule {}

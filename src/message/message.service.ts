@@ -1,42 +1,103 @@
+/**
+ * ============================================================================
+ *  MessageService: the business rules for direct messages
+ * ============================================================================
+ *
+ *   MessageController  → HTTP only
+ *        │
+ *   MessageService     → rules (THIS FILE)
+ *        │               - only participants may read or send (ChatRoomService)
+ *        │               - a sent message is saved, the room's activity time is
+ *        │                 updated, and the message is pushed to the room's
+ *        │                 sockets (ChatGateway)
+ *        │
+ *   MessageRepository  → database queries only
+ *   message.mapper.ts  → entity → response DTO
+ *
+ * Before this refactor ANY signed-in user could read or post into ANY room by
+ * guessing its id, because nothing checked participation.
+ */
 import { Injectable } from '@nestjs/common';
-import { MessageRepository } from './message.repository';
-import { ChatRoomRepository } from '../chatroom/chatroom.repository';
+import { ChatRoomService } from '../chatroom/chatroom.service';
+import { ChatGateway } from '../chatroom/gateway/chat.gateway';
+import { currentSeoulTimestamp } from '../common/utils/date.util';
+import { User } from '../user/user.entity';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { MessageInfoDto, MessageInfoListDto } from './dto/message-info.dto';
-import { User } from '../user/user.entity';
+import { toMessageInfoDto } from './message.mapper';
+import { MessageRepository } from './message.repository';
 
 @Injectable()
 export class MessageService {
   constructor(
-    private messageRepository: MessageRepository,
-    private chatRoomRepository: ChatRoomRepository,
+    private readonly messageRepository: MessageRepository,
+    // Owns the participant rule and the room's activity time.
+    private readonly chatRoomService: ChatRoomService,
+    // Delivers saved messages in real time.
+    private readonly chatGateway: ChatGateway,
   ) {}
 
-  async createMessage(
+  /**
+   * Sends a message to a room the sender participates in.
+   *
+   * Steps:
+   *   1. check participation (404 for unknown rooms and other people's rooms)
+   *   2. save the message
+   *   3. move the room's "last activity" time forward (room list order)
+   *   4. push the message to the sockets that joined the room
+   *
+   * @throws NotFoundException (404) when the sender is not a participant.
+   */
+  async sendMessage(
     sender: User,
-    createMessageDto: CreateMessageDto,
+    { chatRoomId, content, type }: CreateMessageDto,
   ): Promise<MessageInfoDto> {
-    const { chatRoomId } = createMessageDto;
-    const chatRoom = await this.chatRoomRepository.findOneBy({
-      id: Number(chatRoomId),
-    });
+    await this.chatRoomService.assertParticipant(chatRoomId, sender.email);
 
-    const message = await this.messageRepository.createMessage(
+    // createdAt and updatedAt start out identical.
+    const now = new Date(currentSeoulTimestamp()); // see common/utils/date.util.ts
+    const message = this.messageRepository.create({
+      content,
+      type,
+      chatRoom: { id: chatRoomId },
       sender,
-      chatRoom,
-      createMessageDto,
-    );
-    chatRoom.updatedAt = message.createdAt;
-    this.chatRoomRepository.save(chatRoom);
+      createdAt: now,
+      updatedAt: now,
+    });
+    await this.messageRepository.save(message);
 
-    return message;
+    // Awaited now: the old code forgot `await` here, so the room order could
+    // be updated after the response, or silently fail.
+    await this.chatRoomService.markActivity(chatRoomId, now);
+
+    const dto = toMessageInfoDto(message, chatRoomId);
+    this.chatGateway.emitNewMessage(chatRoomId, dto);
+    return dto;
   }
 
-  async getMessageList(
+  /**
+   * One page of a room's messages, newest first.
+   *
+   * @throws NotFoundException (404) when the viewer is not a participant.
+   */
+  async getMessages(
+    viewer: User,
     chatRoomId: number,
     page: number,
     limit: number,
   ): Promise<MessageInfoListDto> {
-    return await this.messageRepository.getMessageList(chatRoomId, page, limit);
+    await this.chatRoomService.assertParticipant(chatRoomId, viewer.email);
+
+    const [messages, total] = await this.messageRepository.findPage(
+      chatRoomId,
+      page,
+      limit,
+    );
+    return {
+      messages: messages.map((message) =>
+        toMessageInfoDto(message, chatRoomId),
+      ),
+      total,
+    };
   }
 }

@@ -21,7 +21,7 @@ import {
   SwaggerModule,
 } from '@nestjs/swagger';
 import { join } from 'path';
-import { SocketIoAdapter } from './chatroom/socket-io.adapters';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 
 /**
  * Applies the app-wide configuration and returns the same app instance,
@@ -93,7 +93,9 @@ export function configureApp(
   // WebSockets
   // -------------------------------------------------------------------------
   // Use Socket.IO for the `@WebSocketGateway()` classes (the DM chat gateway).
-  app.useWebSocketAdapter(new SocketIoAdapter(app));
+  // (The project used to have its own `SocketIoAdapter` subclass that added
+  // nothing to IoAdapter, so the standard adapter is used directly.)
+  app.useWebSocketAdapter(new IoAdapter(app));
 
   return app;
 }
