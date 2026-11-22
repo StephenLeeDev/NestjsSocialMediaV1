@@ -126,6 +126,32 @@ describe('Chat & Message (e2e)', () => {
       await openRoom(senderToken, 'nobody@gmail.com').expect(404);
     });
 
+    it('creates only ONE room when both users open it at the same moment', async () => {
+      // ChatRoomRepository.findOrCreateRoomBetween takes a transaction-level
+      // lock so that two simultaneous requests cannot both see "no room yet"
+      // and each create one.
+      //
+      // HONEST LIMITATION: this test checks the end result only. The race is
+      // timing-dependent, and it could not be forced here: the test also
+      // passed with the lock temporarily removed (even with 25 parallel
+      // pairs). So it does NOT prove the lock works; it only guards against
+      // an obvious regression.
+      const aToken = await signIn(app, 'racer-a@gmail.com');
+      const bToken = await signIn(app, 'racer-b@gmail.com');
+
+      // Fire 5 requests from each side at once.
+      const responses = await Promise.all(
+        Array.from({ length: 5 }, () => [
+          openRoom(aToken, 'racer-b@gmail.com'),
+          openRoom(bToken, 'racer-a@gmail.com'),
+        ]).flat(),
+      );
+
+      const roomIds = new Set(responses.map((res) => res.body.id));
+      expect(responses.every((res) => res.status === 201)).toBe(true);
+      expect(roomIds.size).toBe(1);
+    });
+
     it('rejects opening a room with yourself', async () => {
       await openRoom(senderToken, 'sender@gmail.com').expect(400);
     });

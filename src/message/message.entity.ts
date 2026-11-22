@@ -3,6 +3,12 @@ import { ChatRoomEntity } from '../chatroom/chatroom.entity';
 import { User } from '../user/user.entity';
 import { MessageType } from './message-type';
 
+/**
+ * One direct message (table "messages").
+ *
+ * What the API returns is a different shape (MessageInfoDto), produced by
+ * message.mapper.ts.
+ */
 @Entity('messages')
 export class MessageEntity {
   @PrimaryGeneratedColumn()
@@ -11,10 +17,16 @@ export class MessageEntity {
   @Column()
   content: string;
 
-  @ManyToOne(() => ChatRoomEntity, (chatRoom) => chatRoom.messages)
+  // The room the message belongs to. Required, and deleted together with the
+  // room (ON DELETE CASCADE).
+  @ManyToOne(() => ChatRoomEntity, (chatRoom) => chatRoom.messages, {
+    nullable: false,
+    onDelete: 'CASCADE',
+  })
   chatRoom: ChatRoomEntity;
 
-  @ManyToOne(() => User, (user) => user.messages)
+  // Who wrote the message. Required.
+  @ManyToOne(() => User, (user) => user.messages, { nullable: false })
   sender: User;
 
   @Column()

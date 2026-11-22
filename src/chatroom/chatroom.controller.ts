@@ -1,3 +1,13 @@
+/**
+ * ============================================================================
+ *  ChatRoomController: HTTP endpoints for direct-message rooms (/chat)
+ * ============================================================================
+ *
+ * Responsibility: HTTP only (routes, parsing, Swagger). Every rule lives in
+ * ChatRoomService. All routes require a signed-in user.
+ *
+ * Real-time delivery of messages is handled by ChatGateway (Socket.IO).
+ */
 import {
   Body,
   Controller,
@@ -16,58 +26,46 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { GetUser } from '../auth/get-user.decorator';
+import { ReceiverEmailDto } from '../user/dto/receiver-email.dto';
+import { User } from '../user/user.entity';
 import { ChatRoomService } from './chatroom.service';
 import { ChatRoomDto, ChatRoomListDto } from './dto/chatroom.dto';
-import { GetUser } from '../auth/get-user.decorator';
-import { User } from '../user/user.entity';
-import { ReceiverEmailDto } from '../user/dto/receiver-email.dto';
 
 @ApiTags('CHAT')
 @UseGuards(AuthGuard())
 @ApiBearerAuth('Secret1234')
 @Controller('chat')
 export class ChatRoomController {
-  constructor(private chatService: ChatRoomService) {}
+  constructor(private readonly chatRoomService: ChatRoomService) {}
 
-  @ApiResponse({
-    type: ChatRoomDto,
-    status: 201,
-    description: 'Success',
+  @ApiOperation({
+    summary: `Open the chat room with another user (returns the existing room if there is one)`,
   })
   @ApiBody({ type: ReceiverEmailDto })
-  @ApiOperation({
-    summary: `If a chat room with the receiver already exists, return the chat room information; if it doesn't exist, create and return the chat room`,
-  })
+  @ApiResponse({ type: ChatRoomDto, status: 201, description: 'Success' })
   @Post('/')
-  createChatRoom(
+  openRoom(
     @GetUser() user: User,
     @Body() receiverEmailDto: ReceiverEmailDto,
   ): Promise<ChatRoomDto> {
-    return this.chatService.createChatRoom(user, receiverEmailDto.email);
+    return this.chatRoomService.openRoom(user, receiverEmailDto.email);
   }
 
-  @ApiResponse({
-    type: ChatRoomListDto,
-    status: 200,
-    description: 'Success',
-  })
+  @ApiOperation({ summary: `Your chat rooms, most recently active first` })
   @ApiQuery({
     name: 'page',
-    description: `The page's number to call`,
+    description: `1-based page number`,
     required: true,
   })
-  @ApiQuery({
-    name: 'limit',
-    description: `The number of items on a single page`,
-    required: true,
-  })
-  @ApiOperation({ summary: `Get chat room list by user` })
+  @ApiQuery({ name: 'limit', description: `Rooms per page`, required: true })
+  @ApiResponse({ type: ChatRoomListDto, status: 200, description: 'Success' })
   @Get('/')
-  getChatRoomList(
+  getRooms(
     @GetUser() user: User,
     @Query('page', ParseIntPipe) page: number,
     @Query('limit', ParseIntPipe) limit: number,
   ): Promise<ChatRoomListDto> {
-    return this.chatService.getChatRoomList(user, page, limit);
+    return this.chatRoomService.getRooms(user, page, limit);
   }
 }
