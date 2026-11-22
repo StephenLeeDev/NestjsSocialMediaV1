@@ -7,7 +7,6 @@ import { PostRepository } from './post.repository';
 import { PostController } from './post.controller';
 import { PostService } from './post.service';
 import { MulterModule } from '@nestjs/platform-express';
-import { AuthRepository } from '../auth/auth.repository';
 import { UserRepository } from '../user/user.repository';
 
 @Module({
@@ -30,7 +29,6 @@ import { UserRepository } from '../user/user.repository';
     PostRepository,
     // Used by PostService.createDummyPosts to find or create dummy authors.
     UserRepository,
-    AuthRepository,
   ],
 })
 export class PostModule {}
