@@ -27,6 +27,8 @@ import { AuthRepository } from './auth.repository';
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, AuthRepository],
-  exports: [JwtStrategy, PassportModule],
+  // JwtModule is exported so other modules can verify tokens themselves
+  // (ChatGateway checks the JWT of every Socket.IO connection).
+  exports: [JwtStrategy, PassportModule, JwtModule],
 })
 export class AuthModule {}
