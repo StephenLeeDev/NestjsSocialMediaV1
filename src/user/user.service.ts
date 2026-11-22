@@ -22,7 +22,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { defaultThumbnailUrl } from '../common/utils/image-url.util';
-import { FollowRepository } from '../follow/follow.repository';
+import { FollowService } from '../follow/follow.service';
 import { PostEntity } from '../post/post.entity';
 import { PostService } from '../post/post.service';
 import { UpdatedUserThumbnailDto } from './dto/updated-user-thumbnail.dto';
@@ -38,8 +38,8 @@ import { ProfileCounts, UserRepository } from './user.repository';
 export class UserService {
   constructor(
     private readonly userRepository: UserRepository,
-    // Only for `isFollowing` on other profiles (follow module refactor next).
-    private readonly followRepository: FollowRepository,
+    // Answers "does the viewer follow this user?" for other profiles.
+    private readonly followService: FollowService,
     // Owns the post visibility rule; bookmarks follow it.
     private readonly postService: PostService,
     // Gives access to transactions (several writes that succeed or fail together).
@@ -79,7 +79,7 @@ export class UserService {
     // Independent lookups → run in parallel.
     const [counts, isFollowing] = await Promise.all([
       this.userRepository.countProfileStats(targetEmail),
-      this.followRepository.getIsFollowing(viewerEmail, targetEmail),
+      this.followService.isFollowing(viewerEmail, targetEmail),
     ]);
 
     const profile = this.fillProfile(
