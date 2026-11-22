@@ -32,6 +32,7 @@ import { User } from '../user/user.entity';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { MessageInfoDto, MessageInfoListDto } from './dto/message-info.dto';
 import { MessageService } from './message.service';
+import { ParseLimitPipe, ParsePagePipe } from '../common/pipes/paging.pipes';
 
 @ApiTags('MESSAGE')
 @UseGuards(AuthGuard())
@@ -76,8 +77,8 @@ export class MessageController {
   getMessages(
     @GetUser() user: User,
     @Query('chatRoomId', ParseIntPipe) chatRoomId: number,
-    @Query('page', ParseIntPipe) page: number,
-    @Query('limit', ParseIntPipe) limit: number,
+    @Query('page', ParsePagePipe) page: number,
+    @Query('limit', ParseLimitPipe) limit: number,
   ): Promise<MessageInfoListDto> {
     return this.messageService.getMessages(user, chatRoomId, page, limit);
   }

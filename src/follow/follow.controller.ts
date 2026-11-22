@@ -15,7 +15,6 @@ import {
   Controller,
   Delete,
   Get,
-  ParseIntPipe,
   Post,
   Query,
   UseGuards,
@@ -37,6 +36,7 @@ import { EmailQueryDto } from './dto/email-query.dto';
 import { IsFollowingDto } from './dto/is-following.dto';
 import { SingleIntegerDto } from './dto/single-integer.dto';
 import { FollowService } from './follow.service';
+import { ParseLimitPipe, ParsePagePipe } from '../common/pipes/paging.pipes';
 
 /**
  * Shared Swagger descriptions for the paginated list endpoints.
@@ -150,8 +150,8 @@ export class FollowController {
   @Get('/follower')
   getFollowers(
     @Query() query: EmailQueryDto,
-    @Query('page', ParseIntPipe) page: number,
-    @Query('limit', ParseIntPipe) limit: number,
+    @Query('page', ParsePagePipe) page: number,
+    @Query('limit', ParseLimitPipe) limit: number,
   ): Promise<UserListDto> {
     return this.followService.getFollowers(query.email, page, limit);
   }
@@ -162,8 +162,8 @@ export class FollowController {
   @Get('/following')
   getFollowings(
     @Query() query: EmailQueryDto,
-    @Query('page', ParseIntPipe) page: number,
-    @Query('limit', ParseIntPipe) limit: number,
+    @Query('page', ParsePagePipe) page: number,
+    @Query('limit', ParseLimitPipe) limit: number,
   ): Promise<UserListDto> {
     return this.followService.getFollowings(query.email, page, limit);
   }

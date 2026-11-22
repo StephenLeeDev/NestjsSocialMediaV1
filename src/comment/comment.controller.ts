@@ -37,6 +37,7 @@ import { CommentInfoDto, CommentInfoListDto } from './dto/comment-info.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { CreateDummyCommentDto } from './dto/create-dummy-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
+import { ParseLimitPipe, ParsePagePipe } from '../common/pipes/paging.pipes';
 
 /** Shared Swagger descriptions for the paging query parameters. */
 const PostIdQuery = () =>
@@ -84,8 +85,8 @@ export class CommentController {
     @GetUser() user: User,
     // ParseIntPipe turns "3" into 3 and answers 400 for non-numbers.
     @Query('postId', ParseIntPipe) postId: number,
-    @Query('page', ParseIntPipe) page: number,
-    @Query('limit', ParseIntPipe) limit: number,
+    @Query('page', ParsePagePipe) page: number,
+    @Query('limit', ParseLimitPipe) limit: number,
   ): Promise<CommentInfoListDto> {
     return this.commentService.getComments(postId, user.email, page, limit);
   }
@@ -109,8 +110,8 @@ export class CommentController {
     @GetUser() user: User,
     @Query('parentCommentId', ParseIntPipe) parentCommentId: number,
     @Query('postId', ParseIntPipe) postId: number,
-    @Query('page', ParseIntPipe) page: number,
-    @Query('limit', ParseIntPipe) limit: number,
+    @Query('page', ParsePagePipe) page: number,
+    @Query('limit', ParseLimitPipe) limit: number,
   ): Promise<CommentInfoListDto> {
     return this.commentService.getReplies(
       parentCommentId,
