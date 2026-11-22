@@ -85,8 +85,8 @@ describe('Images (e2e)', () => {
       const uploaded = await uploadThumbnail();
 
       // The response still contains full URLs ...
-      expect(post.imageUrls[0]).toMatch(/^https?:\/\/.+\/images\/\d+\.jpeg$/);
-      expect(uploaded).toMatch(/^https?:\/\/.+\/images\/\d+\.jpeg$/);
+      expect(post.imageUrls[0]).toMatch(/^https?:\/\/.+\/images\/[\w-]+\.jpeg$/);
+      expect(uploaded).toMatch(/^https?:\/\/.+\/images\/[\w-]+\.jpeg$/);
 
       // ... but the database only keeps the file name.
       expect((await storedPost(post.id)).imageUrls).toEqual([
@@ -129,6 +129,29 @@ describe('Images (e2e)', () => {
         );
       } finally {
         process.env.SERVER_URL = original;
+      }
+    });
+  });
+
+  describe('upload file names', () => {
+    it('gives every image of one post its own file', async () => {
+      // Upload file names used to be just the current time in milliseconds.
+      // Images uploaded in the same request usually got the SAME name, so
+      // the last one overwrote the others on disk and the post showed one
+      // picture several times.
+      const res = await request(server)
+        .post('/post')
+        .set(bearer(token))
+        .field('description', 'three pictures')
+        .attach('files', TEST_IMAGE)
+        .attach('files', TEST_IMAGE)
+        .attach('files', TEST_IMAGE)
+        .expect(201);
+
+      const names = res.body.imageUrls.map((url: string) => basename(url));
+      expect(new Set(names).size).toBe(3);
+      for (const url of res.body.imageUrls) {
+        expect(uploadedFileExists(url)).toBe(true);
       }
     });
   });
@@ -203,6 +226,7 @@ describe('Images (e2e)', () => {
       await request(server)
         .post('/post/test/dummy')
         .query({ email: 'mike@gmail.com' })
+        .set(bearer(mikeToken))
         .expect(201);
       const [dummyPost] = await app
         .get(DataSource)
