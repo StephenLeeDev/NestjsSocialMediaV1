@@ -15,6 +15,8 @@ import { UserRepository } from '../user/user.repository';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
+import { RefreshTokenRepository } from './refresh-token/refresh-token.repository';
+import { RefreshTokenService } from './refresh-token/refresh-token.service';
 
 /**
  * Token lifetime used when JWT_EXPIRES_IN_SECONDS is not set.
@@ -24,6 +26,12 @@ import { JwtStrategy } from './jwt.strategy';
  * (which would be 60 * 60 * 24 * 365). It is kept unchanged here because
  * changing how long users stay signed in is a product decision, not a style
  * refactor. (.env.example sets 21,900 seconds ≈ 6 hours.)
+ *
+ * With refresh tokens (see refresh-token/), access tokens SHOULD be short-
+ * lived, typically 15 minutes: a leaked access token cannot be revoked, so
+ * its lifetime is the damage window. It stays long for now because the
+ * current Flutter app does not call POST /auth/refresh yet and would sign the
+ * user out every 15 minutes. Shorten it once the app refreshes on 401.
  */
 const DEFAULT_JWT_EXPIRES_IN_SECONDS = 60 * 60 * 365;
 
@@ -53,6 +61,8 @@ const DEFAULT_JWT_EXPIRES_IN_SECONDS = 60 * 60 * 365;
   providers: [
     AuthService,
     JwtStrategy,
+    RefreshTokenService,
+    RefreshTokenRepository,
     // The user table belongs to the user module; auth only reads and
     // creates rows through the same repository. (Auth used to have its own
     // `AuthRepository` for the same table.)

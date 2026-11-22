@@ -8,10 +8,13 @@
  *   AuthService      → rules (THIS FILE)
  *        │             - the first sign-in creates the account
  *        │             - an email belongs to ONE provider (GOOGLE, ...)
- *        │             - every successful sign-in returns a fresh JWT
+ *        │             - every successful sign-in returns a token PAIR:
+ *        │               a short-lived access token (JWT) and a refresh token
+ *        │             - refresh and logout (POST /auth/refresh, /auth/logout)
  *        │
- *   UserRepository   → database queries only (the user table belongs to the
- *                      user module; auth no longer has its own copy of it)
+ *   RefreshTokenService → the refresh token rules (rotation, reuse detection)
+ *   UserRepository      → database queries only (the user table belongs to the
+ *                         user module; auth no longer has its own copy of it)
  *
  * How the token is checked on later requests is NOT in this file:
  *   - REST:      JwtStrategy (jwt.strategy.ts), used by `AuthGuard()`
@@ -36,9 +39,10 @@ import { buildDummyUsers } from '../user/dummy/dummy-user-data';
 import { User } from '../user/user.entity';
 import { UserRepository } from '../user/user.repository';
 import { AuthSocialType } from './auth-social-type.enum';
-import { AccessTokenDto } from './dto/access-token.dto';
 import { AuthCredentialsDto } from './dto/auth-credential.dto';
+import { AuthTokensDto } from './dto/auth-tokens.dto';
 import { JwtPayload } from './jwt-payload.interface';
+import { RefreshTokenService } from './refresh-token/refresh-token.service';
 
 /**
  * The shared account behind POST /auth/test ("sign in without Google"),
@@ -58,6 +62,8 @@ export class AuthService {
     private readonly userRepository: UserRepository,
     // Configured in AuthModule (secret and expiry come from the environment).
     private readonly jwtService: JwtService,
+    // Issues, rotates and revokes refresh tokens.
+    private readonly refreshTokenService: RefreshTokenService,
   ) {}
 
   /**
@@ -67,14 +73,15 @@ export class AuthService {
    *   1. find the account by email, or create it (first sign-in)
    *   2. check the provider: an email registered with one provider cannot
    *      sign in through another one
-   *   3. return a new access token
+   *   3. return a new token pair; every sign-in starts a NEW session
+   *      (a phone and a tablet each have their own refresh token)
    *
    * @throws ConflictException (409) when the email is registered with a
    *         different provider. (While GOOGLE is the only provider, the DTO
    *         already rejects every other value, so this cannot happen through
    *         HTTP yet. The rule stays for when a second provider is added.)
    */
-  async signIn(credentials: AuthCredentialsDto): Promise<AccessTokenDto> {
+  async signIn(credentials: AuthCredentialsDto): Promise<AuthTokensDto> {
     const { email, socialType } = credentials;
     const user = await this.findOrCreateUser(credentials);
 
@@ -85,14 +92,45 @@ export class AuthService {
     }
 
     this.logger.verbose(`User ${email} has signed in`);
-    return this.issueAccessToken(email);
+    return {
+      accessToken: await this.issueAccessToken(email),
+      refreshToken: await this.refreshTokenService.issue(email),
+    };
+  }
+
+  /**
+   * POST /auth/refresh: trades a refresh token for a NEW pair. The used
+   * refresh token stops working (rotation); see RefreshTokenService.rotate.
+   *
+   * @throws UnauthorizedException (401) for an unknown, expired or reused
+   *         token. The client must then sign in again.
+   */
+  async refresh(refreshToken: string): Promise<AuthTokensDto> {
+    const rotated = await this.refreshTokenService.rotate(refreshToken);
+    return {
+      accessToken: await this.issueAccessToken(rotated.userEmail),
+      refreshToken: rotated.refreshToken,
+    };
+  }
+
+  /**
+   * POST /auth/logout: ends the session of this refresh token, so it can no
+   * longer be used to get new access tokens.
+   *
+   * The current ACCESS token keeps working until it expires: it is checked
+   * by its signature only, without a database lookup. That is why access
+   * tokens should be short-lived (see JWT_EXPIRES_IN_SECONDS). The client
+   * simply deletes it.
+   */
+  async logout(refreshToken: string): Promise<void> {
+    await this.refreshTokenService.revokeSession(refreshToken);
   }
 
   /**
    * POST /auth/test: signs in as the shared test user (TEST_USER_CREDENTIALS),
    * creating it on the first call. Exactly the same as a normal sign-in.
    */
-  signInAsTestUser(): Promise<AccessTokenDto> {
+  signInAsTestUser(): Promise<AuthTokensDto> {
     return this.signIn(TEST_USER_CREDENTIALS);
   }
 
@@ -148,9 +186,9 @@ export class AuthService {
     return this.userRepository.findOneByOrFail({ email });
   }
 
-  /** Creates a signed JWT for the user with this email. */
-  private async issueAccessToken(email: string): Promise<AccessTokenDto> {
+  /** Creates a signed JWT (access token) for the user with this email. */
+  private issueAccessToken(email: string): Promise<string> {
     const payload: JwtPayload = { email };
-    return { accessToken: await this.jwtService.signAsync(payload) };
+    return this.jwtService.signAsync(payload);
   }
 }

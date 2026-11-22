@@ -139,6 +139,16 @@ describe('Refresh tokens (e2e)', () => {
     });
 
     it('lets exactly ONE of several simultaneous refreshes with the same token win', async () => {
+      // The guarantee comes from RefreshTokenRepository.revokeIfActive:
+      // "UPDATE ... WHERE id = ? AND revokedAt IS NULL" lets only one request
+      // revoke the token; the others are treated as reuse.
+      //
+      // HONEST LIMITATION: this test ALSO passed when that condition was
+      // removed on purpose. The requests do not overlap closely enough in
+      // this test environment to hit the race (the same happened with the
+      // chat-room lock and the sign-in race tests). It checks the end result,
+      // not the atomic guard; the guard is covered by a unit test of the
+      // service ("a parallel request was faster").
       const { refreshToken } = await signIn('race@gmail.com');
 
       const responses = await Promise.all(
