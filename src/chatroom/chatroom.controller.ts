@@ -8,15 +8,7 @@
  *
  * Real-time delivery of messages is handled by ChatGateway (Socket.IO).
  */
-import {
-  Body,
-  Controller,
-  Get,
-  ParseIntPipe,
-  Post,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import {
   ApiBearerAuth,
@@ -31,6 +23,7 @@ import { ReceiverEmailDto } from '../user/dto/receiver-email.dto';
 import { User } from '../user/user.entity';
 import { ChatRoomService } from './chatroom.service';
 import { ChatRoomDto, ChatRoomListDto } from './dto/chatroom.dto';
+import { ParseLimitPipe, ParsePagePipe } from '../common/pipes/paging.pipes';
 
 @ApiTags('CHAT')
 @UseGuards(AuthGuard())
@@ -63,8 +56,8 @@ export class ChatRoomController {
   @Get('/')
   getRooms(
     @GetUser() user: User,
-    @Query('page', ParseIntPipe) page: number,
-    @Query('limit', ParseIntPipe) limit: number,
+    @Query('page', ParsePagePipe) page: number,
+    @Query('limit', ParseLimitPipe) limit: number,
   ): Promise<ChatRoomListDto> {
     return this.chatRoomService.getRooms(user, page, limit);
   }

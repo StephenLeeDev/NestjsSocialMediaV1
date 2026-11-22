@@ -7,6 +7,7 @@ import { PostRepository } from './post.repository';
 import { PostController } from './post.controller';
 import { PostService } from './post.service';
 import { MulterModule } from '@nestjs/platform-express';
+import { ImageStorage } from '../common/storage/image-storage.service';
 import { UserRepository } from '../user/user.repository';
 import { PostReactionController } from './reaction/post-reaction.controller';
 import { PostReactionRepository } from './reaction/post-reaction.repository';
@@ -38,6 +39,8 @@ import { PostReactionService } from './reaction/post-reaction.service';
     PostRepository,
     PostReactionService,
     PostReactionRepository,
+    // Deletes uploaded image files that no post refers to anymore.
+    ImageStorage,
     // Used by PostService.createDummyPosts to find or create dummy authors.
     UserRepository,
   ],

@@ -168,6 +168,40 @@ export class PostRepository extends Repository<PostEntity> {
   }
 
   /**
+   * Deletes a post, but only if `authorEmail` wrote it, and returns the
+   * image paths the deleted post had (so the caller can delete the files).
+   *
+   *   DELETE FROM post_entity WHERE id = :id AND "userEmail" = :authorEmail
+   *   RETURNING "imageUrls"
+   *
+   * `RETURNING` hands back the deleted row's values in the SAME statement,
+   * so there is no gap between "read the image list" and "delete the post"
+   * in which the post could change.
+   *
+   * Comments, replies, likes and bookmarks of the post are deleted by the
+   * database through their foreign keys (ON DELETE CASCADE).
+   *
+   * @returns The deleted post's image paths, or `null` when no post with this
+   *          id was written by `authorEmail` (nothing was deleted).
+   */
+  async deleteOwnPost(
+    id: number,
+    authorEmail: string,
+  ): Promise<string[] | null> {
+    const result = await this.createQueryBuilder()
+      .delete()
+      .from(PostEntity)
+      .where('id = :id', { id })
+      // DELETE cannot join, so the foreign key column is used directly.
+      .andWhere('"userEmail" = :authorEmail', { authorEmail })
+      .returning(['imageUrls'])
+      .execute();
+
+    const rows = result.raw as { imageUrls: string[] }[];
+    return rows.length > 0 ? rows[0].imageUrls : null;
+  }
+
+  /**
    * Fills in the non-column fields `commentCount`, `likeCount`, `isLiked`
    * and `isBookmarked` on each post, as seen by `viewerEmail`.
    *

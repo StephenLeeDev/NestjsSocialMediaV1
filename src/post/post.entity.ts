@@ -48,6 +48,9 @@ export class PostEntity extends BaseEntity {
   @Column()
   updatedAt: Date;
 
+  // PATHS of the post's images inside static/images/ (e.g. "1794715290261.jpeg",
+  // "dummy/6.jpeg"), NOT URLs, despite the column name (renaming the column
+  // would need another migration). post.mapper.ts builds the response URLs.
   @Column('text', { array: true, nullable: false })
   imageUrls: string[];
 

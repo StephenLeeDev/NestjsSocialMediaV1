@@ -18,6 +18,7 @@
  */
 import { UserSimpleInfoIncludingStatusMessageDto } from './dto/user-simple-info-including-status-message.dto';
 import { UserSimpleInfoDto } from './dto/user-simple-info.dto';
+import { publicImageUrl } from '../common/utils/image-url.util';
 import { User } from './user.entity';
 
 /** The minimal public view of a user: who they are and what they look like. */
@@ -25,7 +26,8 @@ export function toUserSimpleInfoDto(user: User): UserSimpleInfoDto {
   const dto = new UserSimpleInfoDto();
   dto.email = user.email;
   dto.username = user.username;
-  dto.thumbnail = user.thumbnail;
+  // Stored as a path; returned as a full URL (see image-url.util.ts).
+  dto.thumbnail = publicImageUrl(user.thumbnail);
   return dto;
 }
 
@@ -36,7 +38,8 @@ export function toUserSummaryDto(
   const dto = new UserSimpleInfoIncludingStatusMessageDto();
   dto.email = user.email;
   dto.username = user.username;
-  dto.thumbnail = user.thumbnail;
+  // Stored as a path; returned as a full URL (see image-url.util.ts).
+  dto.thumbnail = publicImageUrl(user.thumbnail);
   dto.statusMessage = user.statusMessage;
   return dto;
 }

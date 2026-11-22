@@ -21,6 +21,7 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ImageStorage } from '../common/storage/image-storage.service';
 import { User } from '../user/user.entity';
 import { UserRepository } from '../user/user.repository';
 import { PostStatus } from './post-status.enum';
@@ -75,12 +76,14 @@ describe('PostService', () => {
   let postRepository: {
     create: jest.Mock;
     save: jest.Mock;
-    delete: jest.Mock;
     findOneBy: jest.Mock;
     findOneWithAuthor: jest.Mock;
     findPageOfPublicPosts: jest.Mock;
     attachStats: jest.Mock;
+    deleteOwnPost: jest.Mock;
   };
+  // Records which files would be deleted, without touching the disk.
+  let imageStorage: { deleteUploadedImages: jest.Mock };
   let service: PostService;
 
   beforeEach(() => {
@@ -89,10 +92,10 @@ describe('PostService', () => {
       create: jest.fn((data) => data),
       // `save` pretends the database assigned id 42.
       save: jest.fn(async (post) => Object.assign(post, { id: post.id ?? 42 })),
-      delete: jest.fn(),
       findOneBy: jest.fn(),
       findOneWithAuthor: jest.fn(),
       findPageOfPublicPosts: jest.fn(),
+      deleteOwnPost: jest.fn(),
       // Pretends the database computed these numbers for the viewer: one
       // like, by the viewer; not bookmarked; two comments.
       attachStats: jest.fn(async (posts: PostEntity[]) => {
@@ -110,9 +113,12 @@ describe('PostService', () => {
     // PostService is a plain class, so it can be constructed directly with the
     // fakes. The user repository is only used by createDummyPosts,
     // which is not unit tested here, so empty objects are enough.
+    imageStorage = { deleteUploadedImages: jest.fn() };
+
     service = new PostService(
       postRepository as unknown as PostRepository,
       {} as UserRepository,
+      imageStorage as unknown as ImageStorage,
     );
   });
 
@@ -129,7 +135,8 @@ describe('PostService', () => {
         id: 42,
         description: 'new',
         status: PostStatus.PUBLIC,
-        imageUrls: ['x.jpeg'],
+        // The stored path, returned as a URL (SERVER_URL from test/setup-unit.ts).
+        imageUrls: ['http://server.test/images/x.jpeg'],
         likeCount: 0,
         isLiked: false,
         commentCount: 0,
@@ -269,25 +276,32 @@ describe('PostService', () => {
   });
 
   describe('deletePost', () => {
-    it('deletes only posts owned by the given user', async () => {
-      postRepository.delete.mockResolvedValue({ affected: 1 });
-      const author = makeUser(AUTHOR);
+    it("deletes the author's post, then its image files", async () => {
+      // The repository reports the deleted post's image paths.
+      postRepository.deleteOwnPost.mockResolvedValue([
+        'a.jpeg',
+        'dummy/3.jpeg',
+      ]);
 
-      await service.deletePost(1, author);
+      await service.deletePost(1, makeUser(AUTHOR));
 
       // The ownership check happens in the DELETE condition itself.
-      expect(postRepository.delete).toHaveBeenCalledWith({
-        id: 1,
-        user: author,
-      });
+      expect(postRepository.deleteOwnPost).toHaveBeenCalledWith(1, AUTHOR);
+      // All paths are handed over; ImageStorage skips the bundled ones.
+      expect(imageStorage.deleteUploadedImages).toHaveBeenCalledWith([
+        'a.jpeg',
+        'dummy/3.jpeg',
+      ]);
     });
 
-    it('throws 404 when nothing was deleted', async () => {
-      postRepository.delete.mockResolvedValue({ affected: 0 });
+    it('throws 404 and deletes no files when nothing was deleted', async () => {
+      // Not the author (or no such post): the DELETE matched no row.
+      postRepository.deleteOwnPost.mockResolvedValue(null);
 
       await expect(
         service.deletePost(1, makeUser(VIEWER)),
       ).rejects.toBeInstanceOf(NotFoundException);
+      expect(imageStorage.deleteUploadedImages).not.toHaveBeenCalled();
     });
   });
 });

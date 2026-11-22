@@ -104,7 +104,8 @@ describe('FollowService', () => {
           {
             email: ME,
             username: 'me',
-            thumbnail: 'thumb.png',
+            // The stored path, returned as a URL (SERVER_URL from test/setup-unit.ts).
+            thumbnail: 'http://server.test/images/thumb.png',
             statusMessage: 'hi',
           },
         ],

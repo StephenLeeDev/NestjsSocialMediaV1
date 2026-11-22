@@ -10,7 +10,6 @@
  *
  * The images are the bundled files `static/images/dummy/1.jpeg` ... `20.jpeg`.
  */
-import { publicImageUrl } from '../../common/utils/image-url.util';
 import { shuffle } from '../../common/utils/random.util';
 
 /** How many bundled dummy images exist (static/images/dummy/1..N.jpeg). */
@@ -35,20 +34,20 @@ export function randomDummyImageSets(postCount: number): string[][] {
   const imageNumbers = shuffle(
     Array.from({ length: DUMMY_IMAGE_COUNT }, (_, index) => index + 1),
   );
-  const toUrl = (imageNumber: number) =>
-    publicImageUrl(`dummy/${imageNumber}.jpeg`);
+  // Image PATHS (what the database stores), not URLs; see image-url.util.ts.
+  const toPath = (imageNumber: number) => `dummy/${imageNumber}.jpeg`;
 
   // First pass: one image for every post.
   const imageSets = imageNumbers
     .slice(0, postCount)
-    .map((imageNumber) => [toUrl(imageNumber)]);
+    .map((imageNumber) => [toPath(imageNumber)]);
 
   // Second pass: hand out the remaining images to random posts, skipping
   // posts that are already full. (Some images may stay unused.)
   for (const imageNumber of imageNumbers.slice(postCount)) {
     const target = imageSets[Math.floor(Math.random() * imageSets.length)];
     if (target.length < MAX_IMAGES_PER_POST) {
-      target.push(toUrl(imageNumber));
+      target.push(toPath(imageNumber));
     }
   }
 

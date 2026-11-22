@@ -19,7 +19,6 @@
 import { randomUUID } from 'crypto';
 import { AuthSocialType } from '../../auth/auth-social-type.enum';
 import { currentSeoulTimestamp } from '../../common/utils/date.util';
-import { publicImageUrl } from '../../common/utils/image-url.util';
 import { randomInt, randomSentence } from '../../common/utils/random.util';
 import { User } from '../user.entity';
 import { NewUser, UserRepository } from '../user.repository';
@@ -63,7 +62,8 @@ export function buildDummyUsers(): NewUser[] {
     username,
     socialType: AuthSocialType.GOOGLE,
     createdAt: new Date(start + index),
-    thumbnail: publicImageUrl(`dummy/${randomInt(1, DUMMY_IMAGE_COUNT)}.jpeg`),
+    // An image PATH, not a URL (see common/utils/image-url.util.ts).
+    thumbnail: `dummy/${randomInt(1, DUMMY_IMAGE_COUNT)}.jpeg`,
     statusMessage: randomSentence(3, 12),
   }));
 }

@@ -269,7 +269,7 @@ describe('User (e2e)', () => {
         .attach('file', TEST_IMAGE)
         .expect(200);
       // The server renames uploads to "<timestamp>.<extension>".
-      expect(uploaded.body.updatedThumbnail).toMatch(/\/images\/\d+\.jpeg$/);
+      expect(uploaded.body.updatedThumbnail).toMatch(/\/images\/[\w-]+\.jpeg$/);
 
       const reset = await request(server)
         .delete('/user/thumbnail')

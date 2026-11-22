@@ -82,7 +82,10 @@
       "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "setupFiles": [
+      "<rootDir>/../test/setup-unit.ts"
+    ]
   },
   "engines": {
     "node": ">=26.0.0"

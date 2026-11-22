@@ -43,7 +43,6 @@ import {
 } from '@nestjs/swagger';
 import { diskStorage } from 'multer';
 import { GetUser } from '../auth/get-user.decorator';
-import { publicImageUrl } from '../common/utils/image-url.util';
 import {
   editFileName,
   imageFileFilter,
@@ -54,6 +53,7 @@ import { CreatePostDto } from './dto/create-post.dto';
 import { PostInfoDto, PostResponse } from './dto/post-info.dto';
 import { UpdatePostDescriptionDto } from './dto/update-post-description.dto';
 import { PostService } from './post.service';
+import { ParseLimitPipe, ParsePagePipe } from '../common/pipes/paging.pipes';
 
 /** The most images one post may have. */
 const MAX_IMAGES_PER_POST = 4;
@@ -121,8 +121,9 @@ export class PostController {
     return this.postService.createPost(
       createPostDto,
       user,
-      // Turn the saved files' new names into public URLs.
-      files.map((file) => publicImageUrl(file.filename)),
+      // The saved files' new names are their image paths (stored as-is;
+      // the response URLs are built by the mapper).
+      files.map((file) => file.filename),
     );
   }
 
@@ -138,8 +139,8 @@ export class PostController {
   getFeed(
     @GetUser() user: User,
     // ParseIntPipe turns "2" into 2 and answers 400 for non-numbers.
-    @Query('page', ParseIntPipe) page: number,
-    @Query('limit', ParseIntPipe) limit: number,
+    @Query('page', ParsePagePipe) page: number,
+    @Query('limit', ParseLimitPipe) limit: number,
   ): Promise<PostResponse> {
     return this.postService.getFeed(user.email, page, limit);
   }
@@ -151,8 +152,8 @@ export class PostController {
   @Get('/my')
   getMyPosts(
     @GetUser() user: User,
-    @Query('page', ParseIntPipe) page: number,
-    @Query('limit', ParseIntPipe) limit: number,
+    @Query('page', ParsePagePipe) page: number,
+    @Query('limit', ParseLimitPipe) limit: number,
   ): Promise<PostResponse> {
     // The viewer is also the author here.
     return this.postService.getPostsByAuthor(
@@ -176,8 +177,8 @@ export class PostController {
   getPostsByAuthor(
     @GetUser() user: User,
     @Query('email') authorEmail: string,
-    @Query('page', ParseIntPipe) page: number,
-    @Query('limit', ParseIntPipe) limit: number,
+    @Query('page', ParsePagePipe) page: number,
+    @Query('limit', ParseLimitPipe) limit: number,
   ): Promise<PostResponse> {
     return this.postService.getPostsByAuthor(
       authorEmail,

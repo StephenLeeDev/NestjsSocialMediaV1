@@ -32,6 +32,7 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ImageStorage } from '../common/storage/image-storage.service';
 import { currentSeoulTimestamp } from '../common/utils/date.util';
 import { User } from '../user/user.entity';
 import { findOrCreateDummyAuthors } from '../user/dummy/dummy-user-data';
@@ -57,6 +58,8 @@ export class PostService {
     private readonly postRepository: PostRepository,
     // Only needed by createDummyPosts (to find or create dummy authors).
     private readonly userRepository: UserRepository,
+    // Deletes a deleted post's uploaded image files.
+    private readonly imageStorage: ImageStorage,
   ) {}
 
   // ==========================================================================
@@ -228,21 +231,32 @@ export class PostService {
   // ==========================================================================
 
   /**
-   * Deletes the viewer's own post. Its comments and replies are deleted with
-   * it by the database (`onDelete: 'CASCADE'` in CommentEntity).
+   * Deletes the viewer's own post, then its uploaded image files.
+   *
+   * The post's comments, replies, likes and bookmarks are deleted with it by
+   * the database (foreign keys with ON DELETE CASCADE).
    *
    * The DELETE statement itself only matches posts owned by `author`, so
    * trying to delete someone else's post deletes nothing and answers 404,
-   * exactly like a post that does not exist.
+   * exactly like a post that does not exist. Its files are then untouched.
+   *
+   * The files are deleted AFTER the row: if deleting the row failed, the post
+   * would otherwise remain with missing pictures. (Before this, the files
+   * were never deleted at all.)
    *
    * @throws NotFoundException (404) when nothing was deleted.
    */
   async deletePost(id: number, author: User): Promise<void> {
-    const result = await this.postRepository.delete({ id, user: author });
-
-    if (result.affected === 0) {
+    const imagePaths = await this.postRepository.deleteOwnPost(
+      id,
+      author.email,
+    );
+    if (imagePaths === null) {
       throw this.postNotFound(id);
     }
+
+    // Bundled dummy images are skipped by ImageStorage.
+    await this.imageStorage.deleteUploadedImages(imagePaths);
   }
 
   // ==========================================================================

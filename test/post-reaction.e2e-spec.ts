@@ -324,6 +324,11 @@ describe('Likes and bookmarks (e2e)', () => {
           .put(`/post/${postId}/bookmark`)
           .set(bearer(readerToken))
           .expect(200);
+        // Bookmark times are stored with millisecond precision. Two requests
+        // in the same millisecond would tie, and the tie-breaker (post id)
+        // would then decide the order, which made this test flaky. A short
+        // pause gives every bookmark its own timestamp.
+        await new Promise((resolve) => setTimeout(resolve, 5));
       }
 
       const all = await bookmarkedIds();

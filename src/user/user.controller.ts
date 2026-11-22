@@ -18,7 +18,6 @@ import {
   Delete,
   Get,
   Param,
-  ParseIntPipe,
   Patch,
   Post,
   Query,
@@ -40,7 +39,6 @@ import {
 } from '@nestjs/swagger';
 import { diskStorage } from 'multer';
 import { GetUser } from '../auth/get-user.decorator';
-import { publicImageUrl } from '../common/utils/image-url.util';
 import {
   editFileName,
   imageFileFilter,
@@ -56,6 +54,7 @@ import { UserInfoDto } from './dto/user-info.dto';
 import { UserListDto } from './dto/user-list.dto';
 import { User } from './user.entity';
 import { UserService } from './user.service';
+import { ParseLimitPipe, ParsePagePipe } from '../common/pipes/paging.pipes';
 
 @ApiTags('USER')
 @UseGuards(AuthGuard())
@@ -102,8 +101,8 @@ export class UserController {
   searchUsers(
     @GetUser() user: User,
     @Query('keyword') keyword: string | undefined,
-    @Query('page', ParseIntPipe) page: number,
-    @Query('limit', ParseIntPipe) limit: number,
+    @Query('page', ParsePagePipe) page: number,
+    @Query('limit', ParseLimitPipe) limit: number,
   ): Promise<UserListDto> {
     return this.userService.searchUsers(user, keyword, page, limit);
   }
@@ -126,9 +125,9 @@ export class UserController {
   @Get('/bookmarks')
   getBookmarkedPosts(
     @GetUser() user: User,
-    // Missing or non-numeric values → 400 (ParseIntPipe).
-    @Query('page', ParseIntPipe) page: number,
-    @Query('limit', ParseIntPipe) limit: number,
+    // Missing, non-numeric or out-of-range values → 400 (see paging.pipes.ts).
+    @Query('page', ParsePagePipe) page: number,
+    @Query('limit', ParseLimitPipe) limit: number,
   ): Promise<PostResponse> {
     return this.reactionService.getBookmarkedPosts(user.email, page, limit);
   }
@@ -199,7 +198,8 @@ export class UserController {
     }
     return this.userService.updateThumbnail(
       user,
-      publicImageUrl(file.filename),
+      // The saved file's new name is its image path.
+      file.filename,
     );
   }
 
