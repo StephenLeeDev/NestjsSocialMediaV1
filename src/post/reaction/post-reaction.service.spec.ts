@@ -229,7 +229,12 @@ describe('PostReactionService', () => {
       const post = {
         id: POST_ID,
         description: 'saved',
-        user: { email: 'author@gmail.com', username: 'author' },
+        user: {
+          email: 'author@gmail.com',
+          username: 'author',
+          thumbnail: 'a.png',
+        },
+        imageUrls: ['photo.jpeg'],
         isBookmarked: true,
       } as PostEntity;
       postRepository.findPageOfBookmarkedPosts.mockResolvedValue([[post], 1]);

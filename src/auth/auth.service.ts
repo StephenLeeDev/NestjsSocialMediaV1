@@ -31,7 +31,7 @@ import { ConflictException, Injectable, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'crypto';
 import { currentSeoulTimestamp } from '../common/utils/date.util';
-import { defaultThumbnailUrl } from '../common/utils/image-url.util';
+import { DEFAULT_THUMBNAIL_PATH } from '../common/utils/image-url.util';
 import { buildDummyUsers } from '../user/dummy/dummy-user-data';
 import { User } from '../user/user.entity';
 import { UserRepository } from '../user/user.repository';
@@ -138,7 +138,7 @@ export class AuthService {
         // (see common/utils/date.util.ts).
         createdAt: new Date(currentSeoulTimestamp()),
         // Every new account starts with the bundled default profile picture.
-        thumbnail: defaultThumbnailUrl(),
+        thumbnail: DEFAULT_THUMBNAIL_PATH,
       },
     ]);
     this.logger.verbose(`Account ${email} has been created`);

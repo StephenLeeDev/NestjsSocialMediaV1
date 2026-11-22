@@ -39,7 +39,6 @@ import {
 } from '@nestjs/swagger';
 import { diskStorage } from 'multer';
 import { GetUser } from '../auth/get-user.decorator';
-import { publicImageUrl } from '../common/utils/image-url.util';
 import {
   editFileName,
   imageFileFilter,
@@ -199,7 +198,8 @@ export class UserController {
     }
     return this.userService.updateThumbnail(
       user,
-      publicImageUrl(file.filename),
+      // The saved file's new name is its image path.
+      file.filename,
     );
   }
 

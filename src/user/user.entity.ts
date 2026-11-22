@@ -38,10 +38,10 @@ export class User extends BaseEntity {
   @Column()
   createdAt: Date;
 
-  // Full URL of the profile picture.
-  // There is intentionally NO database default: the default picture's URL depends
-  // on SERVER_URL, which is configuration, not schema. New accounts get it in
-  // AuthService.signIn via defaultThumbnailUrl().
+  // PATH of the profile picture inside static/images/ (e.g. "1794715290261.jpeg"
+  // or "default/dafault_thumbnail.png"), NOT a URL. Responses turn it into a
+  // URL with the current SERVER_URL (see common/utils/image-url.util.ts).
+  // New accounts get DEFAULT_THUMBNAIL_PATH in AuthService.signIn.
   @Column()
   thumbnail: string;
 

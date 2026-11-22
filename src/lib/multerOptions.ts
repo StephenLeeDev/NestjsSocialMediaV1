@@ -13,6 +13,8 @@
  *   - pass `null` as the error when everything is fine
  *   - pass an Error to reject the upload
  */
+import { randomUUID } from 'crypto';
+import { uploadDirectory } from '../common/storage/image-storage.service';
 
 /**
  * Accepts only image files, judged by their file extension (.jpg, .jpeg, .png).
@@ -28,30 +30,34 @@ export const imageFileFilter = (req, file, callback) => {
 };
 
 /**
- * Gives every uploaded file a new, unique name: "<current time in ms>.<extension>".
+ * Gives every uploaded file a new, unique name:
+ *   "<current time in ms>-<random id>.<extension>"
  *
- * Example: "my photo.jpeg" → "1794715290261.jpeg"
+ * Example: "my photo.jpeg" → "1794715290261-3f2a9c1e-….jpeg"
  *
  * Renaming avoids two problems with the original names:
  *   - two users uploading "image.jpg" would overwrite each other's files
  *   - original names can contain spaces or characters that break URLs
+ *
+ * The random part (a UUID) was added because the time alone is NOT unique:
+ * the images of one post arrive in the same request, usually within the same
+ * millisecond, and got the same name. The last image then overwrote the
+ * others on disk, and the post showed one picture several times. The time
+ * stays at the front so files still sort by upload time in a folder listing.
  */
 export const editFileName = (req, file, callback) => {
   // Everything after the last "." in the original name, e.g. "jpeg".
-  const fileExtName = file.originalname.slice(
-    file.originalname.lastIndexOf('.') - 1 + 2,
+  // (imageFileFilter already guarantees the name ends in .jpg/.jpeg/.png.)
+  const extension = file.originalname.slice(
+    file.originalname.lastIndexOf('.') + 1,
   );
-  const time = Date.now();
-  callback(null, `${time}.${fileExtName}`);
+  callback(null, `${Date.now()}-${randomUUID()}.${extension}`);
 };
 
 /**
- * Decides which folder uploaded images are saved to.
- *
- * - Default: `./static/images`, which `app.setup.ts` serves publicly at `/images/...`.
- * - Override: set the `UPLOAD_DIR` environment variable. The e2e tests use this
- *   to write uploads into a temporary folder, so test images never end up in
- *   the project's `static/` folder.
+ * Decides which folder uploaded images are saved to: `uploadDirectory()`
+ * (see common/storage/image-storage.service.ts, which also deletes uploads
+ * that are no longer used, from the same folder).
  *
  * It is a FUNCTION (called for every upload) rather than a plain string on
  * purpose: decorator options like `diskStorage({ destination: '...' })` are
@@ -63,5 +69,5 @@ export const editFileName = (req, file, callback) => {
  * so the folder must already exist.
  */
 export const uploadDestination = (req, file, callback) => {
-  callback(null, process.env.UPLOAD_DIR || './static/images');
+  callback(null, uploadDirectory());
 };

@@ -19,7 +19,11 @@
  * `User` entity that the JWT guard loaded for this request.
  */
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { defaultThumbnailUrl } from '../common/utils/image-url.util';
+import { ImageStorage } from '../common/storage/image-storage.service';
+import {
+  DEFAULT_THUMBNAIL_PATH,
+  publicImageUrl,
+} from '../common/utils/image-url.util';
 import { FollowService } from '../follow/follow.service';
 import { PostReactionService } from '../post/reaction/post-reaction.service';
 import { UpdatedUserThumbnailDto } from './dto/updated-user-thumbnail.dto';
@@ -39,6 +43,8 @@ export class UserService {
     private readonly followService: FollowService,
     // Provides the bookmark ids for the old `bookMarks` profile field.
     private readonly reactionService: PostReactionService,
+    // Deletes the previous profile picture once it is replaced.
+    private readonly imageStorage: ImageStorage,
   ) {}
 
   // ==========================================================================
@@ -99,13 +105,13 @@ export class UserService {
   /**
    * Sets the viewer's profile picture.
    *
-   * @param imageUrl Public URL of the image Multer has already saved.
+   * @param imagePath File name of the image Multer has already saved.
    */
   async updateThumbnail(
     viewer: User,
-    imageUrl: string,
+    imagePath: string,
   ): Promise<UpdatedUserThumbnailDto> {
-    return this.setThumbnail(viewer, imageUrl);
+    return this.setThumbnail(viewer, imagePath);
   }
 
   /**
@@ -113,7 +119,7 @@ export class UserService {
    * default picture.
    */
   async resetThumbnail(viewer: User): Promise<UpdatedUserThumbnailDto> {
-    return this.setThumbnail(viewer, defaultThumbnailUrl());
+    return this.setThumbnail(viewer, DEFAULT_THUMBNAIL_PATH);
   }
 
   /** Changes the viewer's status message ("" clears it). */
@@ -168,7 +174,8 @@ export class UserService {
   ): T {
     profile.email = user.email;
     profile.username = user.username;
-    profile.thumbnail = user.thumbnail;
+    // Stored as a path; returned as a full URL (see image-url.util.ts).
+    profile.thumbnail = publicImageUrl(user.thumbnail);
     profile.statusMessage = user.statusMessage;
     profile.totalPostCount = counts.totalPostCount;
     profile.followerCount = counts.followerCount;
@@ -179,15 +186,28 @@ export class UserService {
   /** Saves a new profile picture URL and returns it in the response shape. */
   private async setThumbnail(
     viewer: User,
-    imageUrl: string,
+    imagePath: string,
   ): Promise<UpdatedUserThumbnailDto> {
+    // The picture being replaced. `viewer` was loaded by the JWT guard at the
+    // start of this request, so this is the current value.
+    const previousPath = viewer.thumbnail;
+
     await this.userRepository.update(
       { email: viewer.email },
-      { thumbnail: imageUrl },
+      { thumbnail: imagePath },
     );
 
+    // Nothing refers to the previous upload anymore, so its file can go.
+    // (ImageStorage skips bundled images such as the default picture, and the
+    // check below keeps "reset while already on the default" a no-op.)
+    // Known limit: two picture uploads by the same user at the very same
+    // moment could leave one orphaned file behind; that is harmless.
+    if (previousPath !== imagePath) {
+      await this.imageStorage.deleteUploadedImages([previousPath]);
+    }
+
     const result = new UpdatedUserThumbnailDto();
-    result.updatedThumbnail = imageUrl;
+    result.updatedThumbnail = publicImageUrl(imagePath);
     return result;
   }
 }

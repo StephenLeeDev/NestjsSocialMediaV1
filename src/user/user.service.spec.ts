@@ -13,6 +13,7 @@
  * Run with: npm test
  */
 import { NotFoundException } from '@nestjs/common';
+import { ImageStorage } from '../common/storage/image-storage.service';
 import { FollowService } from '../follow/follow.service';
 import { PostReactionService } from '../post/reaction/post-reaction.service';
 import { User } from './user.entity';
@@ -52,6 +53,8 @@ describe('UserService', () => {
   };
   let followService: { isFollowing: jest.Mock };
   let reactionService: { getBookmarkedPostIds: jest.Mock };
+  // Records which files would be deleted, without touching the disk.
+  let imageStorage: { deleteUploadedImages: jest.Mock };
   let service: UserService;
 
   beforeEach(() => {
@@ -67,10 +70,13 @@ describe('UserService', () => {
       getBookmarkedPostIds: jest.fn().mockResolvedValue([5, 8]),
     };
 
+    imageStorage = { deleteUploadedImages: jest.fn() };
+
     service = new UserService(
       userRepository as unknown as UserRepository,
       followService as unknown as FollowService,
       reactionService as unknown as PostReactionService,
+      imageStorage as unknown as ImageStorage,
     );
   });
 
@@ -79,7 +85,7 @@ describe('UserService', () => {
       await expect(service.getMyProfile(makeUser(ME))).resolves.toEqual({
         email: ME,
         username: 'me',
-        thumbnail: 'thumb.png',
+        thumbnail: 'http://server.test/images/thumb.png',
         statusMessage: 'hi',
         ...COUNTS,
         bookMarks: [5, 8],
@@ -131,7 +137,7 @@ describe('UserService', () => {
           {
             email: OTHER,
             username: 'other',
-            thumbnail: 'thumb.png',
+            thumbnail: 'http://server.test/images/thumb.png',
             statusMessage: 'hi',
           },
         ],
@@ -141,14 +147,46 @@ describe('UserService', () => {
   });
 
   describe('thumbnail', () => {
-    it('saves and returns the new picture URL', async () => {
+    it('stores the new PATH, returns its URL and deletes the previous upload', async () => {
+      const me = makeUser(ME, { thumbnail: 'old-upload.jpeg' });
+
       await expect(
-        service.updateThumbnail(makeUser(ME), 'http://x/images/1.jpeg'),
-      ).resolves.toEqual({ updatedThumbnail: 'http://x/images/1.jpeg' });
+        service.updateThumbnail(me, 'new-upload.jpeg'),
+      ).resolves.toEqual({
+        updatedThumbnail: 'http://server.test/images/new-upload.jpeg',
+      });
       expect(userRepository.update).toHaveBeenCalledWith(
         { email: ME },
-        { thumbnail: 'http://x/images/1.jpeg' },
+        { thumbnail: 'new-upload.jpeg' },
       );
+      // ImageStorage decides itself whether a path is an upload; the service
+      // just hands over the picture that is no longer used.
+      expect(imageStorage.deleteUploadedImages).toHaveBeenCalledWith([
+        'old-upload.jpeg',
+      ]);
+    });
+
+    it('resets to the default picture and deletes the previous upload', async () => {
+      const me = makeUser(ME, { thumbnail: 'old-upload.jpeg' });
+
+      await service.resetThumbnail(me);
+
+      expect(userRepository.update).toHaveBeenCalledWith(
+        { email: ME },
+        { thumbnail: 'default/dafault_thumbnail.png' },
+      );
+      expect(imageStorage.deleteUploadedImages).toHaveBeenCalledWith([
+        'old-upload.jpeg',
+      ]);
+    });
+
+    it('deletes nothing when the picture does not change', async () => {
+      // Resetting while already on the default picture.
+      const me = makeUser(ME, { thumbnail: 'default/dafault_thumbnail.png' });
+
+      await service.resetThumbnail(me);
+
+      expect(imageStorage.deleteUploadedImages).not.toHaveBeenCalled();
     });
   });
 });

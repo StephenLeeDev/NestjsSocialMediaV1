@@ -14,6 +14,7 @@
  *   It has no dependencies and no state; it only transforms data. A plain
  *   function is the simplest thing that works and is trivial to unit test.
  */
+import { publicImageUrl } from '../common/utils/image-url.util';
 import { toUserSimpleInfoDto } from '../user/user.mapper';
 import { PostInfoDto } from './dto/post-info.dto';
 import { PostEntity } from './post.entity';
@@ -40,7 +41,9 @@ export function toPostInfoDto(post: PostEntity): PostInfoDto {
   dto.user = toUserSimpleInfoDto(post.user);
   dto.createdAt = post.createdAt;
   dto.updatedAt = post.updatedAt;
-  dto.imageUrls = post.imageUrls;
+  // The database stores image PATHS; the client needs full URLs built from
+  // the current server address (see common/utils/image-url.util.ts).
+  dto.imageUrls = post.imageUrls.map(publicImageUrl);
 
   // None of these are database columns: PostRepository.attachStats computes
   // them. The response reveals the COUNT of likes plus the viewer's own

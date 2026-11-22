@@ -12,6 +12,7 @@ import { Module } from '@nestjs/common';
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
 import { UserRepository } from './user.repository';
+import { ImageStorage } from '../common/storage/image-storage.service';
 import { PassportModule } from '@nestjs/passport';
 import { PostModule } from '../post/post.module';
 import { FollowModule } from '../follow/follow.module';
@@ -23,6 +24,11 @@ import { FollowModule } from '../follow/follow.module';
     FollowModule,
   ],
   controllers: [UserController],
-  providers: [UserService, UserRepository],
+  providers: [
+    UserService,
+    UserRepository,
+    // Deletes a replaced profile picture's file.
+    ImageStorage,
+  ],
 })
 export class UserModule {}

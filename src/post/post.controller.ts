@@ -43,7 +43,6 @@ import {
 } from '@nestjs/swagger';
 import { diskStorage } from 'multer';
 import { GetUser } from '../auth/get-user.decorator';
-import { publicImageUrl } from '../common/utils/image-url.util';
 import {
   editFileName,
   imageFileFilter,
@@ -122,8 +121,9 @@ export class PostController {
     return this.postService.createPost(
       createPostDto,
       user,
-      // Turn the saved files' new names into public URLs.
-      files.map((file) => publicImageUrl(file.filename)),
+      // The saved files' new names are their image paths (stored as-is;
+      // the response URLs are built by the mapper).
+      files.map((file) => file.filename),
     );
   }
 
