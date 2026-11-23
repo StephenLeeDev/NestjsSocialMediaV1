@@ -20,8 +20,9 @@ export class ChatRoomEntity {
   //
   // This used to be declared as @ManyToOne by mistake, which made TypeORM add a
   // meaningless "messagesId" column to this table. As a one-to-many relation it
-  // needs no column here (the foreign key lives on the message). With
-  // `synchronize`, the stray column is dropped on the next start.
+  // needs no column here (the foreign key lives on the message). The stray
+  // column was dropped by `synchronize` back then; databases built by the
+  // migrations (src/migrations) never had it.
   @OneToMany(() => MessageEntity, (message) => message.chatRoom)
   messages: MessageEntity[];
 

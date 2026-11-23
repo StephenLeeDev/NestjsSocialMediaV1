@@ -10,8 +10,10 @@
 #   1. lint:check    ESLint finds no problems (without auto-fixing them)
 #   2. format:check  every file is formatted with Prettier
 #   3. build         the TypeScript compiles (`nest build`)
-#   4. test          the unit tests (*.spec.ts in src/)
-#   5. test:e2e      the e2e tests (test/*.e2e-spec.ts) against a real,
+#   4. migrations    all migrations build the schema on an empty database,
+#                    and it matches the entity classes (no forgotten migration)
+#   5. test          the unit tests (*.spec.ts in src/)
+#   6. test:e2e      the e2e tests (test/*.e2e-spec.ts) against a real,
 #                    empty PostgreSQL started just for this run
 #
 # Nothing here needs secrets: the e2e tests bring their own test settings
@@ -40,6 +42,16 @@ jobs:
     name: Lint, build and test
     runs-on: ubuntu-latest
     timeout-minutes: 15
+
+    # Connection settings for the TypeORM CLI steps below (the e2e tests have
+    # the same values as defaults in test/setup-env.ts). The password is empty
+    # because the database below uses "trust" authentication.
+    env:
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: ''
+      DB_DATABASE: social-media-app-v1-test
 
     # A PostgreSQL server that lives only for this job.
     # Its settings match the defaults in test/setup-env.ts, so the e2e tests
@@ -96,6 +108,17 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      # The migrations must build the whole schema on an EMPTY database, and
+      # the result must match the entity classes. Otherwise someone changed
+      # an entity without writing the migration for it (see
+      # src/migrations/README.md). The TypeORM CLI is called directly here
+      # because the project was just built (the npm scripts build again).
+      - name: Apply all migrations to an empty database
+        run: npx typeorm -d dist/configs/data-source.js migration:run
+
+      - name: Check that the migrations match the entities
+        run: npx typeorm -d dist/configs/data-source.js migration:generate src/migrations/Check --check
 
       - name: Unit tests
         run: npm test
