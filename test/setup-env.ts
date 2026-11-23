@@ -40,16 +40,19 @@ process.env.DB_USERNAME ??= 'postgres';
 process.env.DB_PASSWORD ??= 'postgres';
 process.env.DB_DATABASE ??= 'social-media-app-v1-test';
 
-// Let TypeORM create/alter tables from the entity classes automatically,
-// so the test database always matches the current code without migrations.
-process.env.DB_SYNCHRONIZE = 'true';
+// Build the schema by running the MIGRATIONS (src/migrations) when the app
+// starts, exactly as a real database gets it. So every e2e run also proves
+// that the migrations produce a schema the code works with. (Until
+// migrations were introduced, TypeORM's `synchronize` built it from the
+// entity classes instead, which could hide a missing migration.)
+process.env.DB_MIGRATIONS_RUN = 'true';
 
-// Drop every table when the app starts, then let `synchronize` rebuild them.
-// Why: running the tests of an OLDER commit can leave rows the current schema
-// forbids (e.g. a follow row with NULL, which a new NOT NULL constraint rejects).
-// `synchronize` would then fail before `resetDatabase` ever runs, and every
-// test would fail with a confusing connection error. Starting from an empty
-// schema avoids that. Safe only because this is a "-test" database (see below).
+// Drop every table (including the "migrations" bookkeeping table) when the
+// app starts, so the migrations above always run on an EMPTY database.
+// Why: leftovers from an older commit (rows the current schema forbids, or a
+// half-applied schema) would otherwise break the start, and every test would
+// fail with a confusing connection error. Safe only because this is a "-test"
+// database (see below).
 process.env.DB_DROP_SCHEMA = 'true';
 
 // SQL logging would bury the test output, so it is always off in tests.

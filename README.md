@@ -17,10 +17,23 @@ This is a Social Media project that is researching best practices in NestJS deve
 - REST API integration
   <br><br><br>
 
-## Warning
+## Running locally
 
-This project may not work directly on your computer because I've set a constant IP address(serverUrl) for the mobile environment
-Please edit the constant IP address(serverUrl) before running it, or simply refer to this project as an example
+Requirements: Node.js 26 (see `.nvmrc`) and PostgreSQL.
+
+```bash
+npm ci                    # install exactly the locked dependencies
+cp .env.example .env      # then fill in the values (DB, JWT_SECRET, SERVER_URL)
+npm run migration:run     # create / update the database schema
+npm run start:dev         # http://localhost:3001, Swagger at /api
+```
+
+`SERVER_URL` in `.env` is the address the Flutter app uses to reach this server
+(e.g. your computer's IP on the local network); image URLs are built from it.
+
+The database schema changes only through migrations; see
+[`src/migrations/README.md`](src/migrations/README.md).
+Tests: `npm test` (unit) and `npm run test:e2e` (see [`test/README.md`](test/README.md)).
 
 <br><br>
 
