@@ -1,26 +1,26 @@
+/**
+ * Wires the comment feature together.
+ *
+ * Imports PostModule to use PostService: the post visibility rule (PRIVATE
+ * posts are hidden from other users) is owned by the post module and reused
+ * here instead of being written a second time.
+ */
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { AuthModule } from 'src/auth/auth.module';
+import { AuthModule } from '../auth/auth.module';
 import { CommentController } from './comment.controller';
 import { CommentService } from './comment.service';
-import { CommentRepository } from 'src/comment/comment.repository';
-import { CommentEntity } from 'src/comment/comment.entity';
-import { PostRepository } from 'src/post/post.repository';
-import { UserRepository } from 'src/user/user.repository';
-import { AuthRepository } from 'src/auth/auth.repository';
+import { CommentRepository } from './comment.repository';
+import { PostModule } from '../post/post.module';
+import { UserRepository } from '../user/user.repository';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([
-      PostRepository,
-      CommentRepository,
-      UserRepository,
-      CommentEntity,
-      AuthRepository
-    ]),
-    AuthModule,
-  ],
+  imports: [AuthModule, PostModule],
   controllers: [CommentController],
-  providers: [CommentService]
+  providers: [
+    CommentService,
+    CommentRepository,
+    // Used by CommentService.createDummyComments to find or create dummy authors.
+    UserRepository,
+  ],
 })
 export class CommentModule {}

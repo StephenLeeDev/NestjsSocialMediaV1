@@ -1,27 +1,48 @@
+/**
+ * Wires the post feature together: controller, service, repositories.
+ */
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { AuthModule } from 'src/auth/auth.module';
+import { AuthModule } from '../auth/auth.module';
 import { PostRepository } from './post.repository';
 import { PostController } from './post.controller';
 import { PostService } from './post.service';
 import { MulterModule } from '@nestjs/platform-express';
-import { CommentRepository } from 'src/comment/comment.repository';
-import { CommentEntity } from 'src/comment/comment.entity';
-import { AuthRepository } from 'src/auth/auth.repository';
-import { UserRepository } from 'src/user/user.repository';
+import { ImageStorage } from '../common/storage/image-storage.service';
+import { UserRepository } from '../user/user.repository';
+import { PostReactionController } from './reaction/post-reaction.controller';
+import { PostReactionRepository } from './reaction/post-reaction.repository';
+import { PostReactionService } from './reaction/post-reaction.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([PostRepository, CommentRepository, CommentEntity, UserRepository, AuthRepository]),
     AuthModule,
+    // Default upload limits for this module's file interceptors.
+    // (Where files are stored is set per route, see PostController.)
     MulterModule.register({
-      dest: "./static/images",
       limits: {
-        fileSize: 1000000, // 1000kb
+        fileSize: 1000000, // 1 MB per image
       },
     }),
   ],
-  controllers: [PostController],
-  providers: [PostService]
+  // Likes and bookmarks have their own controller and service (in
+  // ./reaction), but belong to this module: they are things you do TO a post.
+  controllers: [PostController, PostReactionController],
+  exports: [
+    // Other modules may use PostService (e.g. CommentService checks that a
+    // post is visible to the viewer before showing or accepting its comments).
+    PostService,
+    // UserController serves GET /user/bookmarks and the old bookmark toggle.
+    PostReactionService,
+  ],
+  providers: [
+    PostService,
+    PostRepository,
+    PostReactionService,
+    PostReactionRepository,
+    // Deletes uploaded image files that no post refers to anymore.
+    ImageStorage,
+    // Used by PostService.createDummyPosts to find or create dummy authors.
+    UserRepository,
+  ],
 })
 export class PostModule {}

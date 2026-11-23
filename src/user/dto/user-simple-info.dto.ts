@@ -1,7 +1,6 @@
-import { ApiProperty } from "@nestjs/swagger";
+import { ApiProperty } from '@nestjs/swagger';
 
 export class UserSimpleInfoDto {
-
   @ApiProperty({
     example: 'john@gmail.com',
     description: `User's email address`,
@@ -19,5 +18,4 @@ export class UserSimpleInfoDto {
     description: `User's thumbnail url`,
   })
   thumbnail: string;
-
 }

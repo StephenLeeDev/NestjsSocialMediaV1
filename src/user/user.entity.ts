@@ -1,61 +1,71 @@
-import { MessageEntity } from "src/message/message.entity";
-import { Follow } from "src/follow/follow.entity";
-import { PostEntity } from "src/post/post.entity";
-import { BaseEntity, Column, Entity, JoinColumn, OneToMany, Unique } from "typeorm";
-import { UserChatRoomEntity } from "src/chatroom/user-chatroom.entity";
+import { MessageEntity } from '../message/message.entity';
+import { Follow } from '../follow/follow.entity';
+import { PostEntity } from '../post/post.entity';
+import { BaseEntity, Column, Entity, OneToMany, Unique } from 'typeorm';
+import { UserChatRoomEntity } from '../chatroom/user-chatroom.entity';
 
-const serverUrl = 'http://192.168.1.251:3001'
-
+/**
+ * A user row in the database (table "user"). The email is the primary key.
+ *
+ * What the API returns about a user is decided by user.mapper.ts and
+ * UserService (profiles); this class only describes how users are STORED.
+ */
 @Entity()
 @Unique(['email'])
 export class User extends BaseEntity {
+  @Column({ primary: true })
+  email: string;
 
-    @Column({ primary: true })
-    email: string;
+  @Column()
+  uuid: string;
 
-    @Column()
-    uuid: string;
+  @Column()
+  socialType: string;
 
-    @Column()
-    socialType: string;
+  @Column()
+  username: string;
 
-    @Column()
-    username: string;
+  // The user's posts (the other side of PostEntity.user).
+  //
+  // Not `eager` anymore: the JWT guard loads the signed-in user on EVERY
+  // request, and eager loading made that also load ALL of the user's posts
+  // each time, although no code reads this list. (The `@JoinColumn` that was
+  // here had no effect on a one-to-many relation.) Schema unchanged.
+  @OneToMany(() => PostEntity, (post) => post.user)
+  posts: PostEntity[];
 
-    @OneToMany(() => PostEntity, post => post.user, { eager: true })
-    @JoinColumn([{ name: 'postId', referencedColumnName: 'id' }])
-    posts: PostEntity[];
+  // @CreateDateColumn() // UTC
+  @Column()
+  createdAt: Date;
 
-    // @CreateDateColumn() // UTC
-    @Column()
-    createdAt: Date;
+  // PATH of the profile picture inside static/images/ (e.g. "1794715290261.jpeg"
+  // or "default/dafault_thumbnail.png"), NOT a URL. Responses turn it into a
+  // URL with the current SERVER_URL (see common/utils/image-url.util.ts).
+  // New accounts get DEFAULT_THUMBNAIL_PATH in AuthService.signIn.
+  @Column()
+  thumbnail: string;
 
-    @Column({ default: `${serverUrl}/images/default/dafault_thumbnail.png` })
-    thumbnail: string;
+  // (The array column `bookMarks` that used to be here was replaced by the
+  // join table post_bookmark; see post/reaction/post-bookmark.entity.ts.)
 
-    @Column('int', { array: true, nullable: false })
-    bookMarks: number[];
+  @Column({ default: '' })
+  statusMessage: string;
 
-    @Column({ default: "" })
-    statusMessage: string;
+  @OneToMany(() => UserChatRoomEntity, (chatRoom) => chatRoom.user)
+  userChatRooms: UserChatRoomEntity[];
 
-    @OneToMany(() => UserChatRoomEntity, chatRoom => chatRoom.user)
-    @JoinColumn([{ name: 'chatRoomId', referencedColumnName: 'id' }])
-    userChatRooms: UserChatRoomEntity[];
+  @OneToMany(() => MessageEntity, (message) => message.sender)
+  messages: MessageEntity[];
 
-    @OneToMany(() => MessageEntity, message => message.sender)
-    messages: MessageEntity[];
-  
-    @OneToMany(() => Follow, follow => follow.follower)
-    followings: Follow[];
-  
-    @OneToMany(() => Follow, follow => follow.following)
-    followers: Follow[];
-    
-    totalPostCount: number;
-    
-    followerCount: number;
-    
-    followingCount: number;
-    
+  // Follow rows where this user is the FOLLOWER (= the people they follow).
+  @OneToMany(() => Follow, (follow) => follow.follower)
+  followings: Follow[];
+
+  // Follow rows where this user is FOLLOWED (= their followers).
+  @OneToMany(() => Follow, (follow) => follow.following)
+  followers: Follow[];
+
+  // (The non-column fields totalPostCount / followerCount / followingCount that
+  // used to be here were never filled in on the entity; profile counts are
+  // computed by UserRepository.countProfileStats.)
 }

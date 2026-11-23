@@ -1,4 +1,4 @@
 export enum MessageType {
-    TEXT = 'TEXT',
-    IMAGE = 'IMAGE'
+  TEXT = 'TEXT',
+  IMAGE = 'IMAGE',
 }
